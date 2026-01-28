@@ -32,13 +32,12 @@ A browser extension that adds keyboard navigation and volume control to mobile Y
 | Key | Action |
 |-----|--------|
 | `Space` | Play/Pause |
-| `←` | Rewind 5 seconds |
-| `→` | Forward 5 seconds |
+| `←` | Rewind 10 seconds |
+| `→` | Forward 10 seconds |
 | `↑` | Volume up |
 | `↓` | Volume down |
 | `M` | Mute/Unmute |
 | `F` | Toggle fullscreen |
-| `K` | Play/Pause (alternative) |
 
 ## Why This Extension?
 
