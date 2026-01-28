@@ -4,9 +4,9 @@ A browser extension that adds keyboard navigation and volume control to mobile Y
 
 ## Features
 
-✨ **Keyboard Navigation** - Navigate YouTube videos using your keyboard on the mobile site
-🔊 **Volume Control** - Control video volume with keyboard shortcuts
-⌨️ **Desktop Controls** - Brings desktop-like functionality to the mobile YouTube interface
+- ✨ **Keyboard Navigation** - Navigate YouTube videos using your keyboard on the mobile site
+- 🔊 **Volume Control** - Control video volume with keyboard shortcuts
+- ⌨️ **Desktop Controls** - Brings desktop-like functionality to the mobile YouTube interface
 
 ## Installation
 
