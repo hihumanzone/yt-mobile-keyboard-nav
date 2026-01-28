@@ -1,0 +1,18 @@
+{
+  "manifest_version": 3,
+  "name": "Mobile YouTube Desktop Controls",
+  "version": "1.0",
+  "description": "Adds keyboard navigation and volume control to mobile YouTube on desktop",
+  "content_scripts": [
+    {
+      "matches": ["*://m.youtube.com/*"],
+      "js": ["content.js"],
+      "css": ["styles.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "icons": {
+    "48": "icon48.png",
+    "128": "icon128.png"
+  }
+}

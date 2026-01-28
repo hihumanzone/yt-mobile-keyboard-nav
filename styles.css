@@ -1,0 +1,313 @@
+/* =============================================================================
+ * CSS Custom Properties
+ * ============================================================================= */
+
+:root {
+  --yt-ext-font: "YouTube Sans", "Roboto", -apple-system, BlinkMacSystemFont, sans-serif;
+  --yt-ext-bg: rgba(0, 0, 0, 0.75);
+  --yt-ext-bg-solid: rgba(0, 0, 0, 0.85);
+  --yt-ext-text: #fff;
+  --yt-ext-text-secondary: rgba(255, 255, 255, 0.9);
+  --yt-ext-accent: #f00;
+  --yt-ext-accent-gradient: linear-gradient(90deg, #ff4e4e, #f00);
+  --yt-ext-track-bg: rgba(255, 255, 255, 0.2);
+  --yt-ext-hover-bg: rgba(255, 255, 255, 0.15);
+  --yt-ext-active-bg: rgba(255, 255, 255, 0.25);
+  --yt-ext-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  --yt-ext-glow: 0 0 8px rgba(255, 0, 0, 0.3);
+  --yt-ext-glow-strong: 0 0 12px rgba(255, 0, 0, 0.5);
+  --yt-ext-z-index-hud: 2147483647;
+  --yt-ext-z-index-panel: 2147483646;
+  --yt-ext-transition-fast: 0.1s ease;
+  --yt-ext-transition-normal: 0.15s ease;
+  --yt-ext-transition-slow: 0.2s ease;
+}
+
+/* =============================================================================
+ * HUD Overlay
+ * ============================================================================= */
+
+.yt-ext-hud {
+  position: fixed;
+  z-index: var(--yt-ext-z-index-hud);
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.8);
+  transition:
+    opacity var(--yt-ext-transition-normal) ease-out,
+    transform var(--yt-ext-transition-normal) ease-out;
+  will-change: opacity, transform;
+}
+
+.yt-ext-hud.visible {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.yt-ext-hud.hiding {
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.9);
+  transition-timing-function: ease-in;
+  transition-duration: 0.3s;
+}
+
+.yt-ext-hud-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 96px;
+  height: 96px;
+  padding: 16px;
+  box-sizing: border-box;
+  background: var(--yt-ext-bg);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  border-radius: 50%;
+}
+
+.yt-ext-hud-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--yt-ext-text);
+}
+
+.yt-ext-hud-icon svg {
+  width: 48px;
+  height: 48px;
+}
+
+.yt-ext-hud-text {
+  margin-top: 4px;
+  color: var(--yt-ext-text);
+  font-family: var(--yt-ext-font);
+  font-size: 13px;
+  font-weight: 500;
+  text-align: center;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  white-space: nowrap;
+}
+
+.yt-ext-hud-text[hidden] {
+  display: none;
+}
+
+/* =============================================================================
+ * Volume Panel
+ * ============================================================================= */
+
+.yt-ext-volume-panel {
+  position: fixed;
+  right: 60px;
+  bottom: 80px;
+  z-index: var(--yt-ext-z-index-panel);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: var(--yt-ext-bg-solid);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 10px;
+  box-shadow: var(--yt-ext-shadow);
+  font-family: var(--yt-ext-font);
+  opacity: 0;
+  transform: translateY(10px);
+  transition:
+    opacity var(--yt-ext-transition-slow),
+    transform var(--yt-ext-transition-slow);
+  pointer-events: none;
+}
+
+.yt-ext-volume-panel.visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+/* =============================================================================
+ * Volume Button
+ * ============================================================================= */
+
+.yt-ext-volume-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  color: var(--yt-ext-text);
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition:
+    background var(--yt-ext-transition-normal),
+    transform var(--yt-ext-transition-fast);
+}
+
+.yt-ext-volume-btn:hover {
+  background: var(--yt-ext-hover-bg);
+}
+
+.yt-ext-volume-btn:active {
+  background: var(--yt-ext-active-bg);
+  transform: scale(0.95);
+}
+
+.yt-ext-volume-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* =============================================================================
+ * Volume Slider
+ * ============================================================================= */
+
+.yt-ext-slider-wrapper {
+  position: relative;
+  width: 100px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+}
+
+#yt-ext-volume-slider {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+  z-index: 2;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.yt-ext-slider-track {
+  position: absolute;
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  overflow: hidden;
+  pointer-events: none;
+  transition: height var(--yt-ext-transition-normal);
+}
+
+.yt-ext-slider-track-bg {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: var(--yt-ext-track-bg);
+  border-radius: 3px;
+}
+
+.yt-ext-slider-track-fill {
+  position: absolute;
+  height: 100%;
+  background: var(--yt-ext-accent-gradient);
+  border-radius: 3px;
+  box-shadow: var(--yt-ext-glow);
+  transition: width var(--yt-ext-transition-fast);
+}
+
+/* Slider Thumb - WebKit */
+#yt-ext-volume-slider::-webkit-slider-thumb {
+  width: 14px;
+  height: 14px;
+  background: var(--yt-ext-text);
+  border: none;
+  border-radius: 50%;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  transition:
+    transform var(--yt-ext-transition-fast),
+    box-shadow var(--yt-ext-transition-fast);
+}
+
+#yt-ext-volume-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+/* Slider Thumb - Firefox */
+#yt-ext-volume-slider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  background: var(--yt-ext-text);
+  border: none;
+  border-radius: 50%;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+}
+
+#yt-ext-volume-slider::-moz-range-track {
+  background: transparent;
+  border: none;
+}
+
+/* Slider Hover Effects */
+.yt-ext-slider-wrapper:hover .yt-ext-slider-track {
+  height: 8px;
+}
+
+.yt-ext-slider-wrapper:hover .yt-ext-slider-track-fill {
+  box-shadow: var(--yt-ext-glow-strong);
+}
+
+/* =============================================================================
+ * Volume Value Display
+ * ============================================================================= */
+
+.yt-ext-volume-value {
+  min-width: 42px;
+  color: var(--yt-ext-text);
+  font-size: 12px;
+  font-weight: 500;
+  text-align: right;
+  opacity: 0.9;
+}
+
+/* =============================================================================
+ * Fullscreen Mode
+ * ============================================================================= */
+
+:fullscreen .yt-ext-volume-panel,
+:-webkit-full-screen .yt-ext-volume-panel {
+  right: 80px;
+  bottom: 100px;
+}
+
+/* =============================================================================
+ * High DPI Displays
+ * ============================================================================= */
+
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .yt-ext-hud-content,
+  .yt-ext-volume-panel {
+    border: 0.5px solid rgba(255, 255, 255, 0.1);
+  }
+}
+
+/* =============================================================================
+ * Reduced Motion
+ * ============================================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  .yt-ext-hud,
+  .yt-ext-hud.hiding,
+  .yt-ext-volume-panel,
+  .yt-ext-slider-track,
+  .yt-ext-slider-track-fill,
+  .yt-ext-volume-btn {
+    transition-duration: 0.05s;
+  }
+
+  .yt-ext-hud.visible,
+  .yt-ext-hud.hiding {
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
