@@ -21,13 +21,6 @@ A browser extension that adds keyboard navigation and volume control to mobile Y
 4. Click "Load unpacked"
 5. Select the extension directory
 
-### Firefox
-
-1. Download or clone this repository
-2. Navigate to `about:debugging#/runtime/this-firefox`
-3. Click "Load Temporary Add-on"
-4. Select the `manifest.json` file from the extension directory
-
 ## Usage
 
 1. Navigate to [m.youtube.com](https://m.youtube.com) in your desktop browser
@@ -69,20 +62,6 @@ yt-mobile-keyboard-nav/
 - **JavaScript** - Core functionality
 - **CSS** - UI enhancements
 - **Manifest V3** - Modern extension architecture
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-## License
-
-This project is open source and available under the [MIT License](LICENSE).
 
 ## Support
 
