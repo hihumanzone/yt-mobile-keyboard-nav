@@ -12,6 +12,7 @@
     VOLUME_PANEL_HOVER_DURATION: 1500,
     VIDEO_DETECTION_INTERVAL: 500,
     VOLUME_SYNC_INTERVAL: 500,
+    IDLE_HIDE_DELAY: 3000,
 
     // Controls
     VOLUME_STEP: 0.1,
@@ -44,6 +45,7 @@
     HUD_HIDING: "hiding",
     VOLUME_PANEL: "yt-ext-volume-panel",
     VOLUME_PANEL_VISIBLE: "visible",
+    CURSOR_HIDDEN: "yt-ext-cursor-hidden",
   });
 
   const SELECTORS = Object.freeze({
@@ -68,6 +70,8 @@
     volumePanelTimeoutId: null,
     videoDetectionIntervalId: null,
     volumeSyncIntervalId: null,
+    idleTimeoutId: null,
+    isIdle: false,
   };
 
   /* ===========================================================================
@@ -279,7 +283,11 @@
 
       panel.addEventListener("mouseenter", () => {
         state.volumePanelTimeoutId = clearTimer(state.volumePanelTimeoutId);
-        if (hasActiveVideo()) this.show();
+        if (hasActiveVideo()) {
+          this.show();
+          // Keep cursor visible and reset idle timer when hovering panel
+          IdleManager.resetIdleTimer();
+        }
       });
 
       panel.addEventListener("mouseleave", () => {
@@ -453,6 +461,9 @@
     if (action) {
       event.preventDefault();
       action(video);
+      
+      // Reset idle timer on keyboard interaction
+      IdleManager.resetIdleTimer();
     }
   };
 
@@ -488,12 +499,18 @@
       VolumePanel.create();
       this.startVolumeSync();
       VolumePanel.syncWithVideo();
+      
+      // Start idle detection when video becomes active
+      IdleManager.resetIdleTimer();
     },
 
     onVideoDeactivated() {
       state.currentVideo = null;
       VolumePanel.hide();
       this.stopVolumeSync();
+      
+      // Clean up idle detection
+      IdleManager.cleanup();
     },
 
     onVideoChanged(video) {
@@ -538,6 +555,81 @@
   };
 
   /* ===========================================================================
+   * Idle Detection and Auto-Hide
+   * =========================================================================== */
+
+  const IdleManager = {
+    setIdle() {
+      if (state.isIdle) return;
+      state.isIdle = true;
+
+      const video = findActiveVideo();
+      if (!video) return;
+
+      // Add cursor hidden class to video and its container
+      const videoContainer =
+        video.closest(".player-container") ||
+        video.closest(".video-container") ||
+        video.parentElement;
+
+      if (videoContainer) {
+        videoContainer.classList.add(CSS_CLASSES.CURSOR_HIDDEN);
+      }
+      video.classList.add(CSS_CLASSES.CURSOR_HIDDEN);
+
+      // Hide extension volume panel
+      VolumePanel.hide();
+    },
+
+    setActive() {
+      if (!state.isIdle) return;
+      state.isIdle = false;
+
+      // Remove cursor hidden class
+      document.querySelectorAll(`.${CSS_CLASSES.CURSOR_HIDDEN}`).forEach((el) => {
+        el.classList.remove(CSS_CLASSES.CURSOR_HIDDEN);
+      });
+    },
+
+    resetIdleTimer() {
+      this.setActive();
+
+      state.idleTimeoutId = clearTimer(state.idleTimeoutId);
+
+      const video = findActiveVideo();
+      // Only start idle timer if video is playing
+      if (video && !video.paused) {
+        state.idleTimeoutId = setTimeout(
+          () => this.setIdle(),
+          CONFIG.IDLE_HIDE_DELAY
+        );
+      }
+    },
+
+    handleMouseMove(event) {
+      const video = findActiveVideo();
+      if (!video) return;
+
+      // Check if mouse is over the video
+      const videoRect = video.getBoundingClientRect();
+      const isOverVideo =
+        event.clientX >= videoRect.left &&
+        event.clientX <= videoRect.right &&
+        event.clientY >= videoRect.top &&
+        event.clientY <= videoRect.bottom;
+
+      if (isOverVideo) {
+        this.resetIdleTimer();
+      }
+    },
+
+    cleanup() {
+      state.idleTimeoutId = clearTimer(state.idleTimeoutId);
+      this.setActive();
+    },
+  };
+
+  /* ===========================================================================
    * Initialization
    * =========================================================================== */
 
@@ -555,6 +647,29 @@
 
     // Window resize
     window.addEventListener("resize", handleResize);
+
+    // Mouse movement for idle detection
+    document.addEventListener("mousemove", (e) => IdleManager.handleMouseMove(e));
+
+    // Video play/pause events for idle detection
+    document.addEventListener(
+      "play",
+      () => {
+        const video = findActiveVideo();
+        if (video && !video.paused) {
+          IdleManager.resetIdleTimer();
+        }
+      },
+      true
+    );
+
+    document.addEventListener(
+      "pause",
+      () => {
+        IdleManager.cleanup();
+      },
+      true
+    );
 
     // SPA navigation support
     const mutationObserver = new MutationObserver(() => VideoObserver.check());
