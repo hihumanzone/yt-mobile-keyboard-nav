@@ -13,6 +13,7 @@
     VIDEO_DETECTION_INTERVAL: 500,
     VOLUME_SYNC_INTERVAL: 500,
     IDLE_HIDE_DELAY: 1000,
+    IDLE_MOUSE_THROTTLE: 150,
 
     // Controls
     VOLUME_STEP: 0.1,
@@ -91,6 +92,26 @@
       tagName === "INPUT" ||
       tagName === "TEXTAREA" ||
       element?.isContentEditable
+    );
+  };
+
+  const isMouseOverElement = (event, element) => {
+    if (!element) return false;
+    const rect = element.getBoundingClientRect();
+    return (
+      event.clientX >= rect.left &&
+      event.clientX <= rect.right &&
+      event.clientY >= rect.top &&
+      event.clientY <= rect.bottom
+    );
+  };
+
+  const getVideoContainer = (video) => {
+    if (!video) return null;
+    return (
+      video.closest(".player-container") ||
+      video.closest(".video-container") ||
+      video.parentElement
     );
   };
 
@@ -563,7 +584,6 @@
 
   const IdleManager = {
     lastMouseMoveTime: 0,
-    mouseThrottleDelay: 150, // ms
 
     setIdle() {
       if (state.isIdle) return;
@@ -572,18 +592,12 @@
       const video = findActiveVideo();
       if (!video) return;
 
-      // Add cursor hidden class to video and its container
-      const videoContainer =
-        video.closest(".player-container") ||
-        video.closest(".video-container") ||
-        video.parentElement;
-
+      const videoContainer = getVideoContainer(video);
       if (videoContainer) {
         videoContainer.classList.add(CSS_CLASSES.CURSOR_HIDDEN);
       }
       video.classList.add(CSS_CLASSES.CURSOR_HIDDEN);
 
-      // Hide extension volume panel
       VolumePanel.hide();
     },
 
@@ -591,7 +605,6 @@
       if (!state.isIdle) return;
       state.isIdle = false;
 
-      // Remove cursor hidden class
       document.querySelectorAll(`.${CSS_CLASSES.CURSOR_HIDDEN}`).forEach((el) => {
         el.classList.remove(CSS_CLASSES.CURSOR_HIDDEN);
       });
@@ -599,11 +612,9 @@
 
     resetIdleTimer() {
       this.setActive();
-
       state.idleTimeoutId = clearTimer(state.idleTimeoutId);
 
       const video = findActiveVideo();
-      // Only start idle timer if video is playing
       if (video && !video.paused) {
         state.idleTimeoutId = setTimeout(
           () => this.setIdle(),
@@ -613,26 +624,29 @@
     },
 
     handleMouseMove(event) {
-      // Throttle mouse move events for performance
       const now = Date.now();
-      if (now - this.lastMouseMoveTime < this.mouseThrottleDelay) {
+      if (now - this.lastMouseMoveTime < CONFIG.IDLE_MOUSE_THROTTLE) {
         return;
       }
       this.lastMouseMoveTime = now;
 
       const video = findActiveVideo();
-      if (!video) return;
-
-      // Check if mouse is over the video
-      const videoRect = video.getBoundingClientRect();
-      const isOverVideo =
-        event.clientX >= videoRect.left &&
-        event.clientX <= videoRect.right &&
-        event.clientY >= videoRect.top &&
-        event.clientY <= videoRect.bottom;
-
-      if (isOverVideo) {
+      if (video && isMouseOverElement(event, video)) {
         this.resetIdleTimer();
+      }
+    },
+
+    handleVideoPlay(event) {
+      const video = findActiveVideo();
+      if (video && event.target === video) {
+        this.resetIdleTimer();
+      }
+    },
+
+    handleVideoPause(event) {
+      const video = findActiveVideo();
+      if (video && event.target === video) {
+        this.cleanup();
       }
     },
 
@@ -665,29 +679,8 @@
     document.addEventListener("mousemove", (e) => IdleManager.handleMouseMove(e));
 
     // Video play/pause events for idle detection
-    document.addEventListener(
-      "play",
-      (e) => {
-        const video = findActiveVideo();
-        // Only reset idle timer if the playing video is the active one
-        if (video && e.target === video) {
-          IdleManager.resetIdleTimer();
-        }
-      },
-      true
-    );
-
-    document.addEventListener(
-      "pause",
-      (e) => {
-        const video = findActiveVideo();
-        // Only cleanup if the paused video is the active one
-        if (video && e.target === video) {
-          IdleManager.cleanup();
-        }
-      },
-      true
-    );
+    document.addEventListener("play", (e) => IdleManager.handleVideoPlay(e), true);
+    document.addEventListener("pause", (e) => IdleManager.handleVideoPause(e), true);
 
     // SPA navigation support
     const mutationObserver = new MutationObserver(() => VideoObserver.check());
