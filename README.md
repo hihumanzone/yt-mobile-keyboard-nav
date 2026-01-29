@@ -7,6 +7,7 @@ A browser extension that adds keyboard navigation and volume control to mobile Y
 - ✨ **Keyboard Navigation** - Navigate YouTube videos using your keyboard on the mobile site
 - 🔊 **Volume Control** - Control video volume with keyboard shortcuts
 - ⌨️ **Desktop Controls** - Brings desktop-like functionality to the mobile YouTube interface
+- 🎭 **Auto-Hide Cursor & Controls** - Cursor and controls automatically hide after 3 seconds of inactivity (just like desktop YouTube)
 
 ## Installation
 
@@ -26,6 +27,14 @@ A browser extension that adds keyboard navigation and volume control to mobile Y
 1. Navigate to [m.youtube.com](https://m.youtube.com) in your desktop browser
 2. Open any video
 3. Use keyboard shortcuts to control playback
+
+### Auto-Hide Behavior
+
+The extension mimics YouTube desktop's behavior:
+- When the mouse is over a playing video and remains idle for 3 seconds, the cursor and controls automatically hide
+- Moving the mouse or using keyboard shortcuts will show the cursor and controls again
+- When the video is paused, the cursor and controls remain visible
+- The extension's volume panel also auto-hides when idle
 
 ### Keyboard Shortcuts
 
