@@ -185,8 +185,8 @@
         hud = document.createElement("div");
         hud.className = CSS_CLASSES.HUD;
         hud.innerHTML = `
-          <div class="yt-ext-hud-content">
-            <div class="yt-ext-hud-icon"></div>
+          <div class="yt-ext-hud-content" aria-live="polite" aria-atomic="true">
+            <div class="yt-ext-hud-icon" aria-hidden="true"></div>
             <div class="yt-ext-hud-text"></div>
           </div>
         `;
@@ -464,8 +464,11 @@
 
   const KEYBOARD_ACTIONS = Object.freeze({
     Space: (video) => VideoControls.togglePlayPause(video),
+    KeyK: (video) => VideoControls.togglePlayPause(video),
     ArrowLeft: (video) => VideoControls.seek(video, -CONFIG.SEEK_DURATION),
+    KeyJ: (video) => VideoControls.seek(video, -CONFIG.SEEK_DURATION),
     ArrowRight: (video) => VideoControls.seek(video, CONFIG.SEEK_DURATION),
+    KeyL: (video) => VideoControls.seek(video, CONFIG.SEEK_DURATION),
     ArrowUp: (video) => VideoControls.adjustVolume(video, CONFIG.VOLUME_STEP),
     ArrowDown: (video) => VideoControls.adjustVolume(video, -CONFIG.VOLUME_STEP),
     KeyM: (video) => VideoControls.toggleMute(video),

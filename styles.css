@@ -156,6 +156,12 @@
   transform: scale(0.95);
 }
 
+.yt-ext-volume-btn:focus-visible {
+  outline: 2px solid var(--yt-ext-text);
+  outline-offset: 2px;
+  background: var(--yt-ext-hover-bg);
+}
+
 .yt-ext-volume-btn svg {
   width: 20px;
   height: 20px;
@@ -183,6 +189,11 @@
   z-index: 2;
   -webkit-appearance: none;
   appearance: none;
+}
+
+#yt-ext-volume-slider:focus-visible ~ .yt-ext-slider-track {
+  outline: 2px solid var(--yt-ext-text);
+  outline-offset: 4px;
 }
 
 .yt-ext-slider-track {
