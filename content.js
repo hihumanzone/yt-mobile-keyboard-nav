@@ -12,7 +12,7 @@
     VOLUME_PANEL_HOVER_DURATION: 1500,
     VIDEO_DETECTION_INTERVAL: 500,
     VOLUME_SYNC_INTERVAL: 500,
-    IDLE_HIDE_DELAY: 3000,
+    IDLE_HIDE_DELAY: 1000,
 
     // Controls
     VOLUME_STEP: 0.1,
@@ -516,6 +516,9 @@
     onVideoChanged(video) {
       state.currentVideo = video;
       VolumePanel.syncWithVideo();
+      
+      // Reset idle detection for the new video
+      IdleManager.resetIdleTimer();
     },
 
     startVolumeSync() {
@@ -559,6 +562,9 @@
    * =========================================================================== */
 
   const IdleManager = {
+    lastMouseMoveTime: 0,
+    mouseThrottleDelay: 150, // ms
+
     setIdle() {
       if (state.isIdle) return;
       state.isIdle = true;
@@ -607,6 +613,13 @@
     },
 
     handleMouseMove(event) {
+      // Throttle mouse move events for performance
+      const now = Date.now();
+      if (now - this.lastMouseMoveTime < this.mouseThrottleDelay) {
+        return;
+      }
+      this.lastMouseMoveTime = now;
+
       const video = findActiveVideo();
       if (!video) return;
 
@@ -654,9 +667,10 @@
     // Video play/pause events for idle detection
     document.addEventListener(
       "play",
-      () => {
+      (e) => {
         const video = findActiveVideo();
-        if (video && !video.paused) {
+        // Only reset idle timer if the playing video is the active one
+        if (video && e.target === video) {
           IdleManager.resetIdleTimer();
         }
       },
@@ -665,8 +679,12 @@
 
     document.addEventListener(
       "pause",
-      () => {
-        IdleManager.cleanup();
+      (e) => {
+        const video = findActiveVideo();
+        // Only cleanup if the paused video is the active one
+        if (video && e.target === video) {
+          IdleManager.cleanup();
+        }
       },
       true
     );
