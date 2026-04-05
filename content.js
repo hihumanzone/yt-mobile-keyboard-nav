@@ -16,8 +16,9 @@
     IDLE_MOUSE_THROTTLE: 150,
 
     // Controls
-    VOLUME_STEP: 0.1,
+    VOLUME_STEP: 10,
     SEEK_DURATION: 10,
+    VOLUME_CURVE_EXPONENT: 2.2,
 
     // HUD scaling
     PLAY_PAUSE_SCALE: 0.85,
@@ -122,7 +123,8 @@
         document.mozFullScreenElement
     );
 
-  const getFullscreenContainer = () => document.fullscreenElement || document.body;
+  const getFullscreenContainer = () =>
+    document.fullscreenElement || document.body;
 
   const createSvgIcon = (pathData, includeSeekText = false) => {
     const textElement = includeSeekText
@@ -138,14 +140,12 @@
   const findActiveVideo = () => {
     const videos = document.querySelectorAll("video");
 
-    // Priority 1: Currently playing video
     for (const video of videos) {
       if (!video.paused && video.readyState > 0) {
         return video;
       }
     }
 
-    // Priority 2: Paused video with playback progress
     for (const video of videos) {
       if (video.readyState > 0 && video.currentTime > 0) {
         return video;
@@ -167,9 +167,19 @@
     return ICON_PATHS.volumeHigh;
   };
 
+  const sliderPercentToVolume = (percentage) => {
+    const normalizedPercentage = clamp(percentage, 0, 100) / 100;
+    return Math.pow(normalizedPercentage, CONFIG.VOLUME_CURVE_EXPONENT);
+  };
+
+  const volumeToSliderPercent = (volume) => {
+    const normalizedVolume = clamp(volume, 0, 1);
+    return Math.pow(normalizedVolume, 1 / CONFIG.VOLUME_CURVE_EXPONENT) * 100;
+  };
+
   const getVolumePercentage = (video) => {
     const effectiveVolume = video.muted ? 0 : video.volume;
-    return Math.round(effectiveVolume * 100);
+    return Math.round(volumeToSliderPercent(effectiveVolume));
   };
 
   /* ===========================================================================
@@ -231,12 +241,10 @@
 
       this.position(hud, video, scale);
 
-      // Reset animation state
       hud.classList.remove(CSS_CLASSES.HUD_VISIBLE, CSS_CLASSES.HUD_HIDING);
-      void hud.offsetWidth; // Force reflow
+      void hud.offsetWidth;
       hud.classList.add(CSS_CLASSES.HUD_VISIBLE);
 
-      // Schedule hide
       state.hudTimeoutId = clearTimer(state.hudTimeoutId);
       state.hudTimeoutId = setTimeout(() => {
         hud.classList.replace(CSS_CLASSES.HUD_VISIBLE, CSS_CLASSES.HUD_HIDING);
@@ -306,7 +314,6 @@
         state.volumePanelTimeoutId = clearTimer(state.volumePanelTimeoutId);
         if (hasActiveVideo()) {
           this.show();
-          // Keep cursor visible and reset idle timer when hovering panel
           IdleManager.resetIdleTimer();
         }
       });
@@ -323,9 +330,10 @@
       const video = findActiveVideo();
       if (!video) return;
 
-      const volume = e.target.value / 100;
+      const sliderPercentage = Number(e.target.value);
+      const volume = sliderPercentToVolume(sliderPercentage);
       video.volume = volume;
-      video.muted = volume === 0;
+      video.muted = sliderPercentage === 0;
 
       this.updateDisplay(video);
       this.show();
@@ -365,7 +373,6 @@
       const panel = state.volumePanel;
       if (!panel || !hasActiveVideo()) return;
 
-      // Ensure panel is in correct container
       const container = getFullscreenContainer();
       if (panel.parentElement !== container) {
         container.appendChild(panel);
@@ -394,7 +401,7 @@
       const willPlay = video.paused;
       willPlay ? video.play() : video.pause();
 
-      const iconPath = willPlay ? ICON_PATHS.play : ICON_PATHS.pause;
+      const iconPath = willPlay ? ICON_PATHS.pause : ICON_PATHS.play;
       HUD.show(createSvgIcon(iconPath), "", CONFIG.PLAY_PAUSE_SCALE);
     },
 
@@ -403,15 +410,20 @@
       video.currentTime = clamp(video.currentTime + seconds, 0, maxTime);
 
       const isForward = seconds > 0;
-      const iconPath = isForward ? ICON_PATHS.seekForward : ICON_PATHS.seekBackward;
+      const iconPath = isForward
+        ? ICON_PATHS.seekForward
+        : ICON_PATHS.seekBackward;
       const label = isForward ? `+${seconds}s` : `${seconds}s`;
 
       HUD.show(createSvgIcon(iconPath, true), label);
     },
 
     adjustVolume(video, delta) {
-      video.volume = clamp(video.volume + delta, 0, 1);
-      if (delta > 0) video.muted = false;
+      const currentPercentage = getVolumePercentage(video);
+      const nextPercentage = clamp(currentPercentage + delta, 0, 100);
+
+      video.volume = sliderPercentToVolume(nextPercentage);
+      video.muted = nextPercentage === 0;
 
       VolumePanel.syncWithVideo();
       VolumePanel.show();
@@ -482,8 +494,6 @@
     if (action) {
       event.preventDefault();
       action(video);
-      
-      // Reset idle timer on keyboard interaction
       IdleManager.resetIdleTimer();
     }
   };
@@ -520,8 +530,6 @@
       VolumePanel.create();
       this.startVolumeSync();
       VolumePanel.syncWithVideo();
-      
-      // Start idle detection when video becomes active
       IdleManager.resetIdleTimer();
     },
 
@@ -529,16 +537,12 @@
       state.currentVideo = null;
       VolumePanel.hide();
       this.stopVolumeSync();
-      
-      // Clean up idle detection
       IdleManager.cleanup();
     },
 
     onVideoChanged(video) {
       state.currentVideo = video;
       VolumePanel.syncWithVideo();
-      
-      // Reset idle detection for the new video
       IdleManager.resetIdleTimer();
     },
 
@@ -596,6 +600,7 @@
       if (videoContainer) {
         videoContainer.classList.add(CSS_CLASSES.CURSOR_HIDDEN);
       }
+      // Class added to BOTH the container and the video element
       video.classList.add(CSS_CLASSES.CURSOR_HIDDEN);
 
       VolumePanel.hide();
@@ -605,9 +610,11 @@
       if (!state.isIdle) return;
       state.isIdle = false;
 
-      document.querySelectorAll(`.${CSS_CLASSES.CURSOR_HIDDEN}`).forEach((el) => {
-        el.classList.remove(CSS_CLASSES.CURSOR_HIDDEN);
-      });
+      document
+        .querySelectorAll(`.${CSS_CLASSES.CURSOR_HIDDEN}`)
+        .forEach((el) => {
+          el.classList.remove(CSS_CLASSES.CURSOR_HIDDEN);
+        });
     },
 
     resetIdleTimer() {
@@ -631,7 +638,17 @@
       this.lastMouseMoveTime = now;
 
       const video = findActiveVideo();
-      if (video && isMouseOverElement(event, video)) {
+      if (!video) return;
+
+      const videoContainer = getVideoContainer(video);
+
+      // Check BOTH the container and the actual <video> bounding boxes. 
+      // Overflowing elements or black bars resulting from "object-fit: contain"
+      // could be attached directly to the <video> box while overflowing the container wrapper.
+      if (
+        isMouseOverElement(event, videoContainer) ||
+        isMouseOverElement(event, video)
+      ) {
         this.resetIdleTimer();
       }
     },
@@ -661,33 +678,27 @@
    * =========================================================================== */
 
   const init = () => {
-    // Start video detection
     VideoObserver.start();
 
-    // Keyboard controls
     document.addEventListener("keydown", handleKeyDown);
 
-    // Fullscreen handling
     document.addEventListener("fullscreenchange", handleFullscreenChange);
     document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
     document.addEventListener("mozfullscreenchange", handleFullscreenChange);
 
-    // Window resize
     window.addEventListener("resize", handleResize);
 
-    // Mouse movement for idle detection
-    document.addEventListener("mousemove", (e) => IdleManager.handleMouseMove(e));
+    document.addEventListener("mousemove", (e) =>
+      IdleManager.handleMouseMove(e)
+    );
 
-    // Video play/pause events for idle detection
     document.addEventListener("play", (e) => IdleManager.handleVideoPlay(e), true);
     document.addEventListener("pause", (e) => IdleManager.handleVideoPause(e), true);
 
-    // SPA navigation support
     const mutationObserver = new MutationObserver(() => VideoObserver.check());
     mutationObserver.observe(document.body, { childList: true, subtree: true });
   };
 
-  // Start when DOM is ready
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", init);
   } else {
