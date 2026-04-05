@@ -217,12 +217,16 @@
   left: 0;
   width: 33.3333%;
   background: rgba(255, 255, 255, 0.08);
+  border-radius: 3px 0 0 3px;
+  overflow: hidden;
 }
 
 .yt-ext-slider-boost-zone {
   left: 33.3333%;
   width: 66.6667%;
   background: rgba(255, 68, 68, 0.18);
+  border-radius: 0 3px 3px 0;
+  overflow: hidden;
 }
 
 .yt-ext-slider-zone-divider {
@@ -235,16 +239,18 @@
 .yt-ext-slider-safe-fill {
   position: absolute;
   left: 0;
+  width: 0;
   background: var(--yt-ext-accent-gradient);
-  border-radius: 3px 0 0 3px;
+  border-radius: 3px;
   box-shadow: var(--yt-ext-glow);
   transition: width var(--yt-ext-transition-fast);
 }
 
 .yt-ext-slider-boost-fill {
-  left: 33.3333%;
+  left: 0;
+  width: 0;
   background: linear-gradient(90deg, #ff7a00, #ff2d55);
-  border-radius: 0 3px 3px 0;
+  border-radius: 3px;
   box-shadow: 0 0 8px rgba(255, 80, 0, 0.45);
   transition: width var(--yt-ext-transition-fast);
 }

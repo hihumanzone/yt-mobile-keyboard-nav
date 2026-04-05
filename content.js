@@ -22,6 +22,7 @@
     MAX_SAFE_VOLUME_PERCENT: 100,
     MAX_VOLUME_PERCENT: 300,
     MAX_BOOST_MULTIPLIER: 3,
+    MIN_BOOST_DETECTION_THRESHOLD: 1.001,
 
     // HUD scaling
     PLAY_PAUSE_SCALE: 0.85,
@@ -231,7 +232,7 @@
       state.audioContext.resume().catch(() => {});
     }
 
-    gainNode.gain.value = clamp(gainValue, 1, CONFIG.MAX_BOOST_MULTIPLIER);
+    gainNode.gain.value = clamp(gainValue, 0, CONFIG.MAX_BOOST_MULTIPLIER);
     return true;
   };
 
@@ -264,12 +265,11 @@
 
     const gainNode = state.gainNodeMap.get(video);
     const gainValue = gainNode?.gain?.value ?? 1;
-    if (gainValue > 1.001) {
+    if (gainValue > CONFIG.MIN_BOOST_DETECTION_THRESHOLD) {
       return Math.round(clamp(gainValue * 100, 0, CONFIG.MAX_VOLUME_PERCENT));
     }
 
-    const effectiveVolume = video.muted ? 0 : video.volume;
-    return Math.round(volumeToSliderPercent(effectiveVolume));
+    return Math.round(volumeToSliderPercent(video.volume));
   };
 
   /* ===========================================================================
@@ -379,11 +379,13 @@
           />
           <div class="yt-ext-slider-track">
             <div class="yt-ext-slider-track-bg"></div>
-            <div class="yt-ext-slider-safe-zone"></div>
-            <div class="yt-ext-slider-boost-zone"></div>
+            <div class="yt-ext-slider-safe-zone">
+              <div class="yt-ext-slider-safe-fill" id="yt-ext-volume-safe-fill"></div>
+            </div>
+            <div class="yt-ext-slider-boost-zone">
+              <div class="yt-ext-slider-boost-fill" id="yt-ext-volume-boost-fill"></div>
+            </div>
             <div class="yt-ext-slider-zone-divider"></div>
-            <div class="yt-ext-slider-safe-fill" id="yt-ext-volume-safe-fill"></div>
-            <div class="yt-ext-slider-boost-fill" id="yt-ext-volume-boost-fill"></div>
           </div>
         </div>
         <span id="yt-ext-volume-value" class="yt-ext-volume-value">100%</span>
@@ -450,10 +452,14 @@
       if (!slider || !valueEl || !iconPath || !safeFill || !boostFill) return;
 
       const percentage = getVolumePercentage(video);
-      const safeFillWidth = (Math.min(percentage, CONFIG.MAX_SAFE_VOLUME_PERCENT) / CONFIG.MAX_VOLUME_PERCENT) * 100;
-      const boostFillWidth = percentage > CONFIG.MAX_SAFE_VOLUME_PERCENT
-        ? ((percentage - CONFIG.MAX_SAFE_VOLUME_PERCENT) / CONFIG.MAX_VOLUME_PERCENT) * 100
-        : 0;
+      const safeRange = CONFIG.MAX_SAFE_VOLUME_PERCENT;
+      const boostRange = CONFIG.MAX_VOLUME_PERCENT - safeRange;
+      const safeFillWidth =
+        (Math.min(percentage, CONFIG.MAX_SAFE_VOLUME_PERCENT) /
+          safeRange) *
+        100;
+      const boostedAmount = Math.max(percentage - safeRange, 0);
+      const boostFillWidth = (boostedAmount / boostRange) * 100;
 
       slider.value = percentage;
       valueEl.textContent =
