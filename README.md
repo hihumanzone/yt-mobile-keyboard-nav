@@ -43,8 +43,8 @@ The extension mimics YouTube desktop's behavior:
 | `Space` | Play/Pause |
 | `←` | Rewind 10 seconds |
 | `→` | Forward 10 seconds |
-| `↑` | Volume up |
-| `↓` | Volume down |
+| `↑` | Volume up (Safe 0-100%, Amplified 101-300%) |
+| `↓` | Volume down (Safe 0-100%, Amplified 101-300%) |
 | `M` | Mute/Unmute |
 | `F` | Toggle fullscreen |
 
