@@ -6,7 +6,6 @@
    * =========================================================================== */
 
   const CONFIG = Object.freeze({
-    // Timing
     HUD_DISPLAY_DURATION: 1000,
     VOLUME_PANEL_DISPLAY_DURATION: 2000,
     VOLUME_PANEL_HOVER_DURATION: 1500,
@@ -15,16 +14,11 @@
     IDLE_HIDE_DELAY: 1000,
     IDLE_MOUSE_THROTTLE: 150,
 
-    // Controls
     VOLUME_STEP: 10,
     SEEK_DURATION: 10,
     VOLUME_CURVE_EXPONENT: 2.2,
-    MAX_SAFE_VOLUME_PERCENT: 100,
-    MAX_VOLUME_PERCENT: 300,
-    MAX_BOOST_MULTIPLIER: 3,
-    MIN_BOOST_DETECTION_THRESHOLD: 1.001,
+    VOLUME_MAX_PERCENTAGE: 300,
 
-    // HUD scaling
     PLAY_PAUSE_SCALE: 0.85,
     HUD_REFERENCE_WIDTH: 640,
     HUD_SCALE_MIN: 0.6,
@@ -34,15 +28,11 @@
   const ICON_PATHS = Object.freeze({
     play: "M8 5v14l11-7z",
     pause: "M6 19h4V5H6v14zm8-14v14h4V5h-4z",
-    seekForward:
-      "M4 13c0 4.4 3.6 8 8 8s8-3.6 8-8h-2c0 3.3-2.7 6-6 6s-6-2.7-6-6 2.7-6 6-6v4l5-5-5-5v4c-4.4 0-8 3.6-8 8z",
-    seekBackward:
-      "M12 5V1L7 6l5 5V7c3.3 0 6 2.7 6 6s-2.7 6-6 6-6-2.7-6-6H4c0 4.4 3.6 8 8 8s8-3.6 8-8-3.6-8-8-8z",
-    volumeHigh:
-      "M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z",
+    seekForward: "M4 13c0 4.4 3.6 8 8 8s8-3.6 8-8h-2c0 3.3-2.7 6-6 6s-6-2.7-6-6 2.7-6 6-6v4l5-5-5-5v4c-4.4 0-8 3.6-8 8z",
+    seekBackward: "M12 5V1L7 6l5 5V7c3.3 0 6 2.7 6 6s-2.7 6-6 6-6-2.7-6-6H4c0 4.4 3.6 8 8 8s8-3.6 8-8-3.6-8-8-8z",
+    volumeHigh: "M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z",
     volumeLow: "M7 9v6h4l5 5V4l-5 5H7z",
-    volumeMuted:
-      "M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z",
+    volumeMuted: "M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z",
   });
 
   const CSS_CLASSES = Object.freeze({
@@ -52,6 +42,7 @@
     VOLUME_PANEL: "yt-ext-volume-panel",
     VOLUME_PANEL_VISIBLE: "visible",
     CURSOR_HIDDEN: "yt-ext-cursor-hidden",
+    AMPLIFIED: "amplified",
   });
 
   const SELECTORS = Object.freeze({
@@ -79,10 +70,6 @@
     volumeSyncIntervalId: null,
     idleTimeoutId: null,
     isIdle: false,
-    audioContext: null,
-    mediaSourceMap: new WeakMap(),
-    gainNodeMap: new WeakMap(),
-    connectedAudioVideos: new WeakSet(),
   };
 
   /* ===========================================================================
@@ -98,11 +85,7 @@
 
   const isInputElement = (element) => {
     const tagName = element?.tagName;
-    return (
-      tagName === "INPUT" ||
-      tagName === "TEXTAREA" ||
-      element?.isContentEditable
-    );
+    return tagName === "INPUT" || tagName === "TEXTAREA" || element?.isContentEditable;
   };
 
   const isMouseOverElement = (event, element) => {
@@ -118,22 +101,13 @@
 
   const getVideoContainer = (video) => {
     if (!video) return null;
-    return (
-      video.closest(".player-container") ||
-      video.closest(".video-container") ||
-      video.parentElement
-    );
+    return video.closest(".player-container") || video.closest(".video-container") || video.parentElement;
   };
 
   const isFullscreen = () =>
-    Boolean(
-      document.fullscreenElement ||
-        document.webkitFullscreenElement ||
-        document.mozFullScreenElement
-    );
+    Boolean(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement);
 
-  const getFullscreenContainer = () =>
-    document.fullscreenElement || document.body;
+  const getFullscreenContainer = () => document.fullscreenElement || document.body;
 
   const createSvgIcon = (pathData, includeSeekText = false) => {
     const textElement = includeSeekText
@@ -142,29 +116,76 @@
     return `<svg viewBox="0 0 24 24" fill="currentColor"><path d="${pathData}"/>${textElement}</svg>`;
   };
 
-  /* ===========================================================================
-   * Video Detection
-   * =========================================================================== */
+  // Robustly identify built-in player UI elements (desktop and mobile)
+  const isPlayerUI = (element) => {
+    if (!element || element.tagName === 'VIDEO') return false;
 
-  const findActiveVideo = () => {
-    const videos = document.querySelectorAll("video");
-
-    for (const video of videos) {
-      if (!video.paused && video.readyState > 0) {
-        return video;
-      }
-    }
-
-    for (const video of videos) {
-      if (video.readyState > 0 && video.currentTime > 0) {
-        return video;
-      }
-    }
-
-    return null;
+    const uiSelectors = [
+      // Standard interactive elements and roles
+      'button', 'input', 'a', '[role="button"]', '[role="slider"]', 
+      '[role="progressbar"]', '[role="menu"]', '[role="menuitem"]', 
+      '[role="tab"]', '[role="switch"]',
+      
+      // Desktop YouTube Chrome
+      '.ytp-chrome-bottom', '.ytp-chrome-top', '.ytp-settings-menu', 
+      '.ytp-panel', '.ytp-progress-bar', '.ytp-tooltip',
+      
+      // Mobile Web YouTube Chrome
+      '.ytm-bottom-controls', '.ytm-header-bar', '.ytm-player-controls', 
+      '.ytm-progress-bar', '.ytm-controls-bar', '.ytm-settings-menu', 
+      '.ytm-chapters-menu', '.ytm-app-menu', '.ytm-media-controls',
+      
+      // Generic fallbacks
+      '.player-controls-bottom', '.player-controls-top', '.player-controls-middle'
+    ];
+    
+    return Boolean(element.closest(uiSelectors.join(', ')));
   };
 
-  const hasActiveVideo = () => findActiveVideo() !== null;
+  /* ===========================================================================
+   * Audio Manager (Handles Boost up to 300%)
+   * =========================================================================== */
+
+  const AudioManager = {
+    init(video) {
+      if (video._ytExtAudioCtx) return;
+      try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        const ctx = new AudioContext();
+        const source = ctx.createMediaElementSource(video);
+        const gainNode = ctx.createGain();
+        
+        source.connect(gainNode);
+        gainNode.connect(ctx.destination);
+
+        video._ytExtAudioCtx = ctx;
+        video._ytExtGainNode = gainNode;
+      } catch (e) {
+        console.warn("yt-ext: Failed to initialize AudioContext for boost.", e);
+      }
+    },
+
+    setVolume(video, volumeLevel) {
+      video._ytExtVolume = volumeLevel;
+
+      const baseVol = Math.min(volumeLevel, 1);
+      const boostVol = volumeLevel > 1 ? volumeLevel : 1;
+
+      video.volume = baseVol;
+
+      if (volumeLevel > 1 && !video._ytExtGainNode) {
+        this.init(video);
+      }
+
+      if (video._ytExtAudioCtx && video._ytExtAudioCtx.state === 'suspended') {
+        video._ytExtAudioCtx.resume();
+      }
+
+      if (video._ytExtGainNode) {
+        video._ytExtGainNode.gain.value = boostVol;
+      }
+    }
+  };
 
   /* ===========================================================================
    * Volume Utilities
@@ -176,101 +197,46 @@
     return ICON_PATHS.volumeHigh;
   };
 
+  const getEffectiveVolume = (video) => {
+    const expectedBase = video._ytExtVolume !== undefined ? Math.min(video._ytExtVolume, 1) : video.volume;
+    if (Math.abs(video.volume - expectedBase) > 0.01) {
+      video._ytExtVolume = video.volume; 
+      if (video._ytExtGainNode) {
+        video._ytExtGainNode.gain.value = 1;
+      }
+    }
+    return video._ytExtVolume !== undefined ? video._ytExtVolume : video.volume;
+  };
+
   const sliderPercentToVolume = (percentage) => {
-    const normalizedPercentage =
-      clamp(percentage, 0, CONFIG.MAX_SAFE_VOLUME_PERCENT) /
-      CONFIG.MAX_SAFE_VOLUME_PERCENT;
-    return Math.pow(normalizedPercentage, CONFIG.VOLUME_CURVE_EXPONENT);
+    const p = clamp(percentage, 0, CONFIG.VOLUME_MAX_PERCENTAGE);
+    if (p <= 100) return Math.pow(p / 100, CONFIG.VOLUME_CURVE_EXPONENT);
+    return 1 + ((p - 100) / 100);
   };
 
   const volumeToSliderPercent = (volume) => {
-    const normalizedVolume = clamp(volume, 0, 1);
-    return (
-      Math.pow(normalizedVolume, 1 / CONFIG.VOLUME_CURVE_EXPONENT) *
-      CONFIG.MAX_SAFE_VOLUME_PERCENT
-    );
-  };
-
-  const getAudioContextCtor = () => window.AudioContext || window.webkitAudioContext;
-
-  const ensureGainNode = (video) => {
-    const AudioContextCtor = getAudioContextCtor();
-    if (!AudioContextCtor) return null;
-
-    if (!state.audioContext) {
-      state.audioContext = new AudioContextCtor();
-    }
-
-    let sourceNode = state.mediaSourceMap.get(video);
-    let gainNode = state.gainNodeMap.get(video);
-
-    if (!sourceNode) {
-      sourceNode = state.audioContext.createMediaElementSource(video);
-      state.mediaSourceMap.set(video, sourceNode);
-    }
-
-    if (!gainNode) {
-      gainNode = state.audioContext.createGain();
-      gainNode.gain.value = 1;
-      state.gainNodeMap.set(video, gainNode);
-    }
-
-    if (!state.connectedAudioVideos.has(video)) {
-      sourceNode.connect(gainNode);
-      gainNode.connect(state.audioContext.destination);
-      state.connectedAudioVideos.add(video);
-    }
-
-    return gainNode;
-  };
-
-  const setVideoGain = (video, gainValue) => {
-    const gainNode = ensureGainNode(video);
-    if (!gainNode) return false;
-
-    if (state.audioContext?.state === "suspended") {
-      state.audioContext.resume().catch(() => {});
-    }
-
-    gainNode.gain.value = clamp(gainValue, 0, CONFIG.MAX_BOOST_MULTIPLIER);
-    return true;
-  };
-
-  const applyVolumePercentage = (video, percentage) => {
-    const clampedPercentage = clamp(percentage, 0, CONFIG.MAX_VOLUME_PERCENT);
-
-    if (clampedPercentage <= CONFIG.MAX_SAFE_VOLUME_PERCENT) {
-      video.volume = sliderPercentToVolume(clampedPercentage);
-      video.muted = clampedPercentage === 0;
-
-      const gainNode = state.gainNodeMap.get(video);
-      if (gainNode) gainNode.gain.value = 1;
-      return clampedPercentage;
-    }
-
-    const gainApplied = setVideoGain(video, clampedPercentage / 100);
-    if (!gainApplied) {
-      video.volume = sliderPercentToVolume(CONFIG.MAX_SAFE_VOLUME_PERCENT);
-      video.muted = false;
-      return CONFIG.MAX_SAFE_VOLUME_PERCENT;
-    }
-
-    video.volume = 1;
-    video.muted = false;
-    return clampedPercentage;
+    const v = clamp(volume, 0, CONFIG.VOLUME_MAX_PERCENTAGE / 100);
+    if (v <= 1) return Math.pow(v, 1 / CONFIG.VOLUME_CURVE_EXPONENT) * 100;
+    return 100 + (v - 1) * 100;
   };
 
   const getVolumePercentage = (video) => {
-    if (video.muted) return 0;
-
-    const gainNode = state.gainNodeMap.get(video);
-    const gainValue = gainNode?.gain?.value ?? 1;
-    if (gainValue > CONFIG.MIN_BOOST_DETECTION_THRESHOLD) {
-      return Math.round(clamp(gainValue * 100, 0, CONFIG.MAX_VOLUME_PERCENT));
-    }
-
-    return Math.round(volumeToSliderPercent(video.volume));
+    const effectiveVolume = video.muted ? 0 : getEffectiveVolume(video);
+    return Math.round(volumeToSliderPercent(effectiveVolume));
   };
+
+  /* ===========================================================================
+   * Video Detection
+   * =========================================================================== */
+
+  const findActiveVideo = () => {
+    const videos = document.querySelectorAll("video");
+    for (const video of videos) if (!video.paused && video.readyState > 0) return video;
+    for (const video of videos) if (video.readyState > 0 && video.currentTime > 0) return video;
+    return null;
+  };
+
+  const hasActiveVideo = () => findActiveVideo() !== null;
 
   /* ===========================================================================
    * HUD Component
@@ -362,6 +328,7 @@
       const panel = document.createElement("div");
       panel.id = "yt-ext-volume-panel";
       panel.className = CSS_CLASSES.VOLUME_PANEL;
+      
       panel.innerHTML = `
         <button class="yt-ext-volume-btn" id="yt-ext-mute-btn" type="button" aria-label="Toggle mute">
           <svg viewBox="0 0 24 24" fill="currentColor">
@@ -373,9 +340,9 @@
             type="range"
             id="yt-ext-volume-slider"
             min="0"
-            max="300"
+            max="${CONFIG.VOLUME_MAX_PERCENTAGE}"
             value="100"
-            aria-label="Volume (safe: 0 to 100, amplified: 101 to 300)"
+            aria-label="Volume"
           />
           <div class="yt-ext-slider-track">
             <div class="yt-ext-slider-track-bg"></div>
@@ -415,10 +382,7 @@
       });
 
       panel.addEventListener("mouseleave", () => {
-        state.volumePanelTimeoutId = setTimeout(
-          () => this.hide(),
-          CONFIG.VOLUME_PANEL_HOVER_DURATION
-        );
+        state.volumePanelTimeoutId = setTimeout(() => this.hide(), CONFIG.VOLUME_PANEL_HOVER_DURATION);
       });
     },
 
@@ -427,7 +391,10 @@
       if (!video) return;
 
       const sliderPercentage = Number(e.target.value);
-      applyVolumePercentage(video, sliderPercentage);
+      const volume = sliderPercentToVolume(sliderPercentage);
+      
+      AudioManager.setVolume(video, volume);
+      video.muted = sliderPercentage === 0;
 
       this.updateDisplay(video);
       this.show();
@@ -438,6 +405,10 @@
       if (!video) return;
 
       video.muted = !video.muted;
+      if (!video.muted) {
+        AudioManager.setVolume(video, getEffectiveVolume(video));
+      }
+
       this.updateDisplay(video);
       this.show();
     },
@@ -452,27 +423,24 @@
       if (!slider || !valueEl || !iconPath || !safeFill || !boostFill) return;
 
       const percentage = getVolumePercentage(video);
-      const safeRange = CONFIG.MAX_SAFE_VOLUME_PERCENT;
-      const boostRange = CONFIG.MAX_VOLUME_PERCENT - safeRange;
-      const safeFillWidth =
-        (Math.min(percentage, CONFIG.MAX_SAFE_VOLUME_PERCENT) /
-          safeRange) *
-        100;
-      const boostedAmount = Math.max(percentage - safeRange, 0);
-      const boostFillWidth = (boostedAmount / boostRange) * 100;
 
       slider.value = percentage;
-      valueEl.textContent =
-        percentage > CONFIG.MAX_SAFE_VOLUME_PERCENT
-          ? `${percentage}% AMP`
-          : `${percentage}%`;
-      valueEl.classList.toggle(
-        "amplified",
-        percentage > CONFIG.MAX_SAFE_VOLUME_PERCENT
-      );
-      safeFill.style.width = `${safeFillWidth}%`;
+      valueEl.textContent = `${percentage}%`;
+
+      const safePercent = Math.min(percentage, 100);
+      safeFill.style.width = `${safePercent}%`;
+
+      const boostPercent = Math.max(0, percentage - 100);
+      const boostFillWidth = (boostPercent / (CONFIG.VOLUME_MAX_PERCENTAGE - 100)) * 100;
       boostFill.style.width = `${boostFillWidth}%`;
-      iconPath.setAttribute("d", getVolumeIconPath(video.volume, video.muted));
+
+      if (percentage > 100) {
+        valueEl.classList.add(CSS_CLASSES.AMPLIFIED);
+      } else {
+        valueEl.classList.remove(CSS_CLASSES.AMPLIFIED);
+      }
+
+      iconPath.setAttribute("d", getVolumeIconPath(getEffectiveVolume(video), video.muted));
     },
 
     syncWithVideo() {
@@ -492,10 +460,7 @@
       panel.classList.add(CSS_CLASSES.VOLUME_PANEL_VISIBLE);
 
       state.volumePanelTimeoutId = clearTimer(state.volumePanelTimeoutId);
-      state.volumePanelTimeoutId = setTimeout(
-        () => this.hide(),
-        CONFIG.VOLUME_PANEL_DISPLAY_DURATION
-      );
+      state.volumePanelTimeoutId = setTimeout(() => this.hide(), CONFIG.VOLUME_PANEL_DISPLAY_DURATION);
     },
 
     hide() {
@@ -511,7 +476,6 @@
     togglePlayPause(video) {
       const willPlay = video.paused;
       willPlay ? video.play() : video.pause();
-
       const iconPath = willPlay ? ICON_PATHS.pause : ICON_PATHS.play;
       HUD.show(createSvgIcon(iconPath), "", CONFIG.PLAY_PAUSE_SCALE);
     },
@@ -521,9 +485,7 @@
       video.currentTime = clamp(video.currentTime + seconds, 0, maxTime);
 
       const isForward = seconds > 0;
-      const iconPath = isForward
-        ? ICON_PATHS.seekForward
-        : ICON_PATHS.seekBackward;
+      const iconPath = isForward ? ICON_PATHS.seekForward : ICON_PATHS.seekBackward;
       const label = isForward ? `+${seconds}s` : `${seconds}s`;
 
       HUD.show(createSvgIcon(iconPath, true), label);
@@ -531,29 +493,30 @@
 
     adjustVolume(video, delta) {
       const currentPercentage = getVolumePercentage(video);
-      const nextPercentage = clamp(
-        currentPercentage + delta,
-        0,
-        CONFIG.MAX_VOLUME_PERCENT
-      );
-      const appliedPercentage = applyVolumePercentage(video, nextPercentage);
+      const nextPercentage = clamp(currentPercentage + delta, 0, CONFIG.VOLUME_MAX_PERCENTAGE);
+
+      AudioManager.setVolume(video, sliderPercentToVolume(nextPercentage));
+      video.muted = nextPercentage === 0;
 
       VolumePanel.syncWithVideo();
       VolumePanel.show();
 
-      const percentage = Math.round(appliedPercentage);
-      const iconPath = getVolumeIconPath(video.volume, video.muted);
+      const percentage = getVolumePercentage(video);
+      const iconPath = getVolumeIconPath(getEffectiveVolume(video), video.muted);
       HUD.show(createSvgIcon(iconPath), `${percentage}%`);
     },
 
     toggleMute(video) {
       video.muted = !video.muted;
+      if (!video.muted) {
+        AudioManager.setVolume(video, getEffectiveVolume(video));
+      }
 
       VolumePanel.syncWithVideo();
 
       const percentage = getVolumePercentage(video);
       const label = video.muted ? "Muted" : `${percentage}%`;
-      const iconPath = getVolumeIconPath(video.volume, video.muted);
+      const iconPath = getVolumeIconPath(getEffectiveVolume(video), video.muted);
       HUD.show(createSvgIcon(iconPath), label);
     },
 
@@ -562,22 +525,11 @@
       if (!video) return;
 
       if (isFullscreen()) {
-        const exitFn =
-          document.exitFullscreen ||
-          document.webkitExitFullscreen ||
-          document.mozCancelFullScreen;
+        const exitFn = document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen;
         exitFn?.call(document);
       } else {
-        const container =
-          video.closest(".player-container") ||
-          video.closest(".video-container") ||
-          video.parentElement ||
-          video;
-
-        const requestFn =
-          container.requestFullscreen ||
-          container.webkitRequestFullscreen ||
-          container.mozRequestFullScreen;
+        const container = video.closest(".player-container") || video.closest(".video-container") || video.parentElement || video;
+        const requestFn = container.requestFullscreen || container.webkitRequestFullscreen || container.mozRequestFullScreen;
         requestFn?.call(container);
       }
     },
@@ -600,17 +552,19 @@
   const handleKeyDown = (event) => {
     if (isInputElement(event.target)) return;
 
-    const action = KEYBOARD_ACTIONS[event.code];
-    if (!action) return;
-
     const video = findActiveVideo();
     if (!video) return;
 
-    event.preventDefault();
-    event.stopPropagation();
-    event.stopImmediatePropagation();
-    action(video);
-    IdleManager.resetIdleTimer();
+    const action = KEYBOARD_ACTIONS[event.code];
+    if (action) {
+      // Completely block the native site handler
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      
+      action(video);
+      IdleManager.resetIdleTimer();
+    }
   };
 
   /* ===========================================================================
@@ -619,10 +573,7 @@
 
   const VideoObserver = {
     start() {
-      state.videoDetectionIntervalId = setInterval(
-        () => this.check(),
-        CONFIG.VIDEO_DETECTION_INTERVAL
-      );
+      state.videoDetectionIntervalId = setInterval(() => this.check(), CONFIG.VIDEO_DETECTION_INTERVAL);
       this.check();
     },
 
@@ -663,10 +614,7 @@
 
     startVolumeSync() {
       if (state.volumeSyncIntervalId) return;
-      state.volumeSyncIntervalId = setInterval(
-        () => VolumePanel.syncWithVideo(),
-        CONFIG.VOLUME_SYNC_INTERVAL
-      );
+      state.volumeSyncIntervalId = setInterval(() => VolumePanel.syncWithVideo(), CONFIG.VOLUME_SYNC_INTERVAL);
     },
 
     stopVolumeSync() {
@@ -683,7 +631,6 @@
 
   const handleFullscreenChange = () => {
     HUD.cleanup();
-
     if (state.volumePanel && hasActiveVideo()) {
       getFullscreenContainer().appendChild(state.volumePanel);
     }
@@ -703,54 +650,16 @@
 
   const IdleManager = {
     lastMouseMoveTime: 0,
-    lastPointerPosition: null,
-
-    getPointerContext(event, video) {
-      const videoContainer = getVideoContainer(video);
-      const pointerElement = document.elementFromPoint(
-        event.clientX,
-        event.clientY
-      );
-      const isOverVideoBounds = isMouseOverElement(event, video);
-      const isOverContainerBounds = isMouseOverElement(event, videoContainer);
-      const isOnVideoSurface = pointerElement === video && isOverVideoBounds;
-      const isOnPlayerUiElement =
-        Boolean(pointerElement) &&
-        pointerElement !== video &&
-        (isOverVideoBounds ||
-          (videoContainer && videoContainer.contains(pointerElement)) ||
-          isOverContainerBounds);
-
-      return {
-        isOnVideoSurface,
-        isOnPlayerUiElement,
-      };
-    },
-
-    isPointerOnVideoSurface(video) {
-      if (!this.lastPointerPosition) return false;
-
-      const pointerEventLike = {
-        clientX: this.lastPointerPosition.x,
-        clientY: this.lastPointerPosition.y,
-      };
-      return this.getPointerContext(pointerEventLike, video).isOnVideoSurface;
-    },
 
     setIdle() {
       if (state.isIdle) return;
+      state.isIdle = true;
 
       const video = findActiveVideo();
       if (!video) return;
-      if (!this.isPointerOnVideoSurface(video)) return;
-
-      state.isIdle = true;
 
       const videoContainer = getVideoContainer(video);
-      if (videoContainer) {
-        videoContainer.classList.add(CSS_CLASSES.CURSOR_HIDDEN);
-      }
-      // Class added to BOTH the container and the video element
+      if (videoContainer) videoContainer.classList.add(CSS_CLASSES.CURSOR_HIDDEN);
       video.classList.add(CSS_CLASSES.CURSOR_HIDDEN);
 
       VolumePanel.hide();
@@ -760,11 +669,9 @@
       if (!state.isIdle) return;
       state.isIdle = false;
 
-      document
-        .querySelectorAll(`.${CSS_CLASSES.CURSOR_HIDDEN}`)
-        .forEach((el) => {
-          el.classList.remove(CSS_CLASSES.CURSOR_HIDDEN);
-        });
+      document.querySelectorAll(`.${CSS_CLASSES.CURSOR_HIDDEN}`).forEach((el) => {
+        el.classList.remove(CSS_CLASSES.CURSOR_HIDDEN);
+      });
     },
 
     resetIdleTimer() {
@@ -773,51 +680,49 @@
 
       const video = findActiveVideo();
       if (video && !video.paused) {
-        state.idleTimeoutId = setTimeout(
-          () => this.setIdle(),
-          CONFIG.IDLE_HIDE_DELAY
-        );
+        state.idleTimeoutId = setTimeout(() => this.setIdle(), CONFIG.IDLE_HIDE_DELAY);
       }
     },
 
     handleMouseMove(event) {
       const now = Date.now();
-      if (now - this.lastMouseMoveTime < CONFIG.IDLE_MOUSE_THROTTLE) {
-        return;
-      }
+      if (now - this.lastMouseMoveTime < CONFIG.IDLE_MOUSE_THROTTLE) return;
       this.lastMouseMoveTime = now;
-      this.lastPointerPosition = { x: event.clientX, y: event.clientY };
 
       const video = findActiveVideo();
       if (!video) return;
 
-      const pointerContext = this.getPointerContext(event, video);
+      const target = event.target;
 
-      if (pointerContext.isOnVideoSurface) {
-        this.resetIdleTimer();
+      // 1. If hovered over Extension UI -> Force visible, never hide
+      if (target.closest('#yt-ext-volume-panel') || target.closest('.yt-ext-hud')) {
+        this.setActive();
+        clearTimer(state.idleTimeoutId);
         return;
       }
 
-      state.idleTimeoutId = clearTimer(state.idleTimeoutId);
-      this.setActive();
+      // 2. If hovered over YouTube UI -> Force visible, never hide
+      if (isPlayerUI(target)) {
+        this.setActive();
+        clearTimer(state.idleTimeoutId);
+        return;
+      }
 
-      if (pointerContext.isOnPlayerUiElement) {
-        VolumePanel.show();
+      // 3. Otherwise, if hovering the actual video surface -> allow auto-hide
+      const videoContainer = getVideoContainer(video);
+      if (isMouseOverElement(event, videoContainer) || isMouseOverElement(event, video)) {
+        this.resetIdleTimer();
       }
     },
 
     handleVideoPlay(event) {
       const video = findActiveVideo();
-      if (video && event.target === video) {
-        this.resetIdleTimer();
-      }
+      if (video && event.target === video) this.resetIdleTimer();
     },
 
     handleVideoPause(event) {
       const video = findActiveVideo();
-      if (video && event.target === video) {
-        this.cleanup();
-      }
+      if (video && event.target === video) this.cleanup();
     },
 
     cleanup() {
@@ -833,18 +738,15 @@
   const init = () => {
     VideoObserver.start();
 
-    document.addEventListener("keydown", handleKeyDown, true);
+    // Use capturing phase to intercept before YouTube scripts & stopped events
+    window.addEventListener("keydown", handleKeyDown, { capture: true });
+    window.addEventListener("mousemove", (e) => IdleManager.handleMouseMove(e), { capture: true });
 
     document.addEventListener("fullscreenchange", handleFullscreenChange);
     document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
     document.addEventListener("mozfullscreenchange", handleFullscreenChange);
-
     window.addEventListener("resize", handleResize);
-
-    document.addEventListener("mousemove", (e) =>
-      IdleManager.handleMouseMove(e)
-    );
-
+    
     document.addEventListener("play", (e) => IdleManager.handleVideoPlay(e), true);
     document.addEventListener("pause", (e) => IdleManager.handleVideoPause(e), true);
 
