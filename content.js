@@ -19,6 +19,9 @@
     VOLUME_STEP: 10,
     SEEK_DURATION: 10,
     VOLUME_CURVE_EXPONENT: 2.2,
+    MAX_SAFE_VOLUME_PERCENT: 100,
+    MAX_VOLUME_PERCENT: 300,
+    MAX_BOOST_MULTIPLIER: 3,
 
     // HUD scaling
     PLAY_PAUSE_SCALE: 0.85,
@@ -55,7 +58,8 @@
     VOLUME_PANEL: "#yt-ext-volume-panel",
     VOLUME_SLIDER: "#yt-ext-volume-slider",
     VOLUME_ICON_PATH: "#yt-ext-volume-icon-path",
-    VOLUME_FILL: "#yt-ext-volume-fill",
+    VOLUME_SAFE_FILL: "#yt-ext-volume-safe-fill",
+    VOLUME_BOOST_FILL: "#yt-ext-volume-boost-fill",
     VOLUME_VALUE: "#yt-ext-volume-value",
     MUTE_BUTTON: "#yt-ext-mute-btn",
   });
@@ -74,6 +78,10 @@
     volumeSyncIntervalId: null,
     idleTimeoutId: null,
     isIdle: false,
+    audioContext: null,
+    mediaSourceMap: new WeakMap(),
+    gainNodeMap: new WeakMap(),
+    connectedAudioVideos: new WeakSet(),
   };
 
   /* ===========================================================================
@@ -168,16 +176,98 @@
   };
 
   const sliderPercentToVolume = (percentage) => {
-    const normalizedPercentage = clamp(percentage, 0, 100) / 100;
+    const normalizedPercentage =
+      clamp(percentage, 0, CONFIG.MAX_SAFE_VOLUME_PERCENT) /
+      CONFIG.MAX_SAFE_VOLUME_PERCENT;
     return Math.pow(normalizedPercentage, CONFIG.VOLUME_CURVE_EXPONENT);
   };
 
   const volumeToSliderPercent = (volume) => {
     const normalizedVolume = clamp(volume, 0, 1);
-    return Math.pow(normalizedVolume, 1 / CONFIG.VOLUME_CURVE_EXPONENT) * 100;
+    return (
+      Math.pow(normalizedVolume, 1 / CONFIG.VOLUME_CURVE_EXPONENT) *
+      CONFIG.MAX_SAFE_VOLUME_PERCENT
+    );
+  };
+
+  const getAudioContextCtor = () => window.AudioContext || window.webkitAudioContext;
+
+  const ensureGainNode = (video) => {
+    const AudioContextCtor = getAudioContextCtor();
+    if (!AudioContextCtor) return null;
+
+    if (!state.audioContext) {
+      state.audioContext = new AudioContextCtor();
+    }
+
+    let sourceNode = state.mediaSourceMap.get(video);
+    let gainNode = state.gainNodeMap.get(video);
+
+    if (!sourceNode) {
+      sourceNode = state.audioContext.createMediaElementSource(video);
+      state.mediaSourceMap.set(video, sourceNode);
+    }
+
+    if (!gainNode) {
+      gainNode = state.audioContext.createGain();
+      gainNode.gain.value = 1;
+      state.gainNodeMap.set(video, gainNode);
+    }
+
+    if (!state.connectedAudioVideos.has(video)) {
+      sourceNode.connect(gainNode);
+      gainNode.connect(state.audioContext.destination);
+      state.connectedAudioVideos.add(video);
+    }
+
+    return gainNode;
+  };
+
+  const setVideoGain = (video, gainValue) => {
+    const gainNode = ensureGainNode(video);
+    if (!gainNode) return false;
+
+    if (state.audioContext?.state === "suspended") {
+      state.audioContext.resume().catch(() => {});
+    }
+
+    gainNode.gain.value = clamp(gainValue, 1, CONFIG.MAX_BOOST_MULTIPLIER);
+    return true;
+  };
+
+  const applyVolumePercentage = (video, percentage) => {
+    const clampedPercentage = clamp(percentage, 0, CONFIG.MAX_VOLUME_PERCENT);
+
+    if (clampedPercentage <= CONFIG.MAX_SAFE_VOLUME_PERCENT) {
+      video.volume = sliderPercentToVolume(clampedPercentage);
+      video.muted = clampedPercentage === 0;
+
+      const gainNode = state.gainNodeMap.get(video);
+      if (gainNode) gainNode.gain.value = 1;
+      return clampedPercentage;
+    }
+
+    const gainApplied = setVideoGain(video, clampedPercentage / 100);
+    if (!gainApplied) {
+      video.volume = sliderPercentToVolume(CONFIG.MAX_SAFE_VOLUME_PERCENT);
+      video.muted = false;
+      return CONFIG.MAX_SAFE_VOLUME_PERCENT;
+    }
+
+    video.volume = 1;
+    video.muted = false;
+    return clampedPercentage;
   };
 
   const getVolumePercentage = (video) => {
+    if (video.muted) return 0;
+
+    const gainNode = state.gainNodeMap.get(video);
+    const gainValue = gainNode?.gain?.value ?? 1;
+    if (gainValue > 1.001) {
+      return Math.round(clamp(gainValue * 100, 0, CONFIG.MAX_VOLUME_PERCENT));
+    }
+
     const effectiveVolume = video.muted ? 0 : video.volume;
     return Math.round(volumeToSliderPercent(effectiveVolume));
   };
@@ -283,13 +373,17 @@
             type="range"
             id="yt-ext-volume-slider"
             min="0"
-            max="100"
+            max="300"
             value="100"
-            aria-label="Volume"
+            aria-label="Volume (safe: 0 to 100, amplified: 101 to 300)"
           />
           <div class="yt-ext-slider-track">
             <div class="yt-ext-slider-track-bg"></div>
-            <div class="yt-ext-slider-track-fill" id="yt-ext-volume-fill"></div>
+            <div class="yt-ext-slider-safe-zone"></div>
+            <div class="yt-ext-slider-boost-zone"></div>
+            <div class="yt-ext-slider-zone-divider"></div>
+            <div class="yt-ext-slider-safe-fill" id="yt-ext-volume-safe-fill"></div>
+            <div class="yt-ext-slider-boost-fill" id="yt-ext-volume-boost-fill"></div>
           </div>
         </div>
         <span id="yt-ext-volume-value" class="yt-ext-volume-value">100%</span>
@@ -331,9 +425,7 @@
       if (!video) return;
 
       const sliderPercentage = Number(e.target.value);
-      const volume = sliderPercentToVolume(sliderPercentage);
-      video.volume = volume;
-      video.muted = sliderPercentage === 0;
+      applyVolumePercentage(video, sliderPercentage);
 
       this.updateDisplay(video);
       this.show();
@@ -352,15 +444,28 @@
       const slider = document.querySelector(SELECTORS.VOLUME_SLIDER);
       const valueEl = document.querySelector(SELECTORS.VOLUME_VALUE);
       const iconPath = document.querySelector(SELECTORS.VOLUME_ICON_PATH);
-      const fill = document.querySelector(SELECTORS.VOLUME_FILL);
+      const safeFill = document.querySelector(SELECTORS.VOLUME_SAFE_FILL);
+      const boostFill = document.querySelector(SELECTORS.VOLUME_BOOST_FILL);
 
-      if (!slider || !valueEl || !iconPath || !fill) return;
+      if (!slider || !valueEl || !iconPath || !safeFill || !boostFill) return;
 
       const percentage = getVolumePercentage(video);
+      const safeFillWidth = (Math.min(percentage, CONFIG.MAX_SAFE_VOLUME_PERCENT) / CONFIG.MAX_VOLUME_PERCENT) * 100;
+      const boostFillWidth = percentage > CONFIG.MAX_SAFE_VOLUME_PERCENT
+        ? ((percentage - CONFIG.MAX_SAFE_VOLUME_PERCENT) / CONFIG.MAX_VOLUME_PERCENT) * 100
+        : 0;
 
       slider.value = percentage;
-      valueEl.textContent = `${percentage}%`;
-      fill.style.width = `${percentage}%`;
+      valueEl.textContent =
+        percentage > CONFIG.MAX_SAFE_VOLUME_PERCENT
+          ? `${percentage}% AMP`
+          : `${percentage}%`;
+      valueEl.classList.toggle(
+        "amplified",
+        percentage > CONFIG.MAX_SAFE_VOLUME_PERCENT
+      );
+      safeFill.style.width = `${safeFillWidth}%`;
+      boostFill.style.width = `${boostFillWidth}%`;
       iconPath.setAttribute("d", getVolumeIconPath(video.volume, video.muted));
     },
 
@@ -420,15 +525,17 @@
 
     adjustVolume(video, delta) {
       const currentPercentage = getVolumePercentage(video);
-      const nextPercentage = clamp(currentPercentage + delta, 0, 100);
-
-      video.volume = sliderPercentToVolume(nextPercentage);
-      video.muted = nextPercentage === 0;
+      const nextPercentage = clamp(
+        currentPercentage + delta,
+        0,
+        CONFIG.MAX_VOLUME_PERCENT
+      );
+      const appliedPercentage = applyVolumePercentage(video, nextPercentage);
 
       VolumePanel.syncWithVideo();
       VolumePanel.show();
 
-      const percentage = getVolumePercentage(video);
+      const percentage = Math.round(appliedPercentage);
       const iconPath = getVolumeIconPath(video.volume, video.muted);
       HUD.show(createSvgIcon(iconPath), `${percentage}%`);
     },
