@@ -600,15 +600,17 @@
   const handleKeyDown = (event) => {
     if (isInputElement(event.target)) return;
 
+    const action = KEYBOARD_ACTIONS[event.code];
+    if (!action) return;
+
     const video = findActiveVideo();
     if (!video) return;
 
-    const action = KEYBOARD_ACTIONS[event.code];
-    if (action) {
-      event.preventDefault();
-      action(video);
-      IdleManager.resetIdleTimer();
-    }
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation?.();
+    action(video);
+    IdleManager.resetIdleTimer();
   };
 
   /* ===========================================================================
@@ -701,13 +703,48 @@
 
   const IdleManager = {
     lastMouseMoveTime: 0,
+    lastPointerPosition: null,
+
+    getPointerContext(event, video) {
+      const videoContainer = getVideoContainer(video);
+      const pointerElement = document.elementFromPoint(
+        event.clientX,
+        event.clientY
+      );
+      const isOverVideoBounds = isMouseOverElement(event, video);
+      const isOverContainerBounds = isMouseOverElement(event, videoContainer);
+      const isOnVideoSurface = pointerElement === video && isOverVideoBounds;
+      const isOnPlayerUiElement =
+        Boolean(pointerElement) &&
+        pointerElement !== video &&
+        (isOverVideoBounds ||
+          (videoContainer && videoContainer.contains(pointerElement)) ||
+          isOverContainerBounds);
+
+      return {
+        isOnVideoSurface,
+        isOnPlayerUiElement,
+      };
+    },
+
+    isPointerOnVideoSurface(video) {
+      if (!this.lastPointerPosition) return false;
+
+      const pointerEventLike = {
+        clientX: this.lastPointerPosition.x,
+        clientY: this.lastPointerPosition.y,
+      };
+      return this.getPointerContext(pointerEventLike, video).isOnVideoSurface;
+    },
 
     setIdle() {
       if (state.isIdle) return;
-      state.isIdle = true;
 
       const video = findActiveVideo();
       if (!video) return;
+      if (!this.isPointerOnVideoSurface(video)) return;
+
+      state.isIdle = true;
 
       const videoContainer = getVideoContainer(video);
       if (videoContainer) {
@@ -749,20 +786,23 @@
         return;
       }
       this.lastMouseMoveTime = now;
+      this.lastPointerPosition = { x: event.clientX, y: event.clientY };
 
       const video = findActiveVideo();
       if (!video) return;
 
-      const videoContainer = getVideoContainer(video);
+      const pointerContext = this.getPointerContext(event, video);
 
-      // Check BOTH the container and the actual <video> bounding boxes. 
-      // Overflowing elements or black bars resulting from "object-fit: contain"
-      // could be attached directly to the <video> box while overflowing the container wrapper.
-      if (
-        isMouseOverElement(event, videoContainer) ||
-        isMouseOverElement(event, video)
-      ) {
+      if (pointerContext.isOnVideoSurface) {
         this.resetIdleTimer();
+        return;
+      }
+
+      state.idleTimeoutId = clearTimer(state.idleTimeoutId);
+      this.setActive();
+
+      if (pointerContext.isOnPlayerUiElement) {
+        VolumePanel.show();
       }
     },
 
@@ -793,7 +833,7 @@
   const init = () => {
     VideoObserver.start();
 
-    document.addEventListener("keydown", handleKeyDown);
+    document.addEventListener("keydown", handleKeyDown, true);
 
     document.addEventListener("fullscreenchange", handleFullscreenChange);
     document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
