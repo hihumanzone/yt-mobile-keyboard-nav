@@ -608,7 +608,7 @@
 
     event.preventDefault();
     event.stopPropagation();
-    event.stopImmediatePropagation?.();
+    event.stopImmediatePropagation();
     action(video);
     IdleManager.resetIdleTimer();
   };
