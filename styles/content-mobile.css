@@ -1,0 +1,452 @@
+/* Mobile Mode Layout Overrides */
+@media (min-width: 650px) and (orientation: landscape) {
+  html.yt-mobile-mode {
+    --glass: rgba(15, 15, 15, 0.85);
+    --border: rgba(255, 255, 255, 0.08);
+  }
+
+  /* Fixed header */
+  html.yt-mobile-mode .fixed-header,
+  html.yt-mobile-mode #header-bar,
+  html.yt-mobile-mode ytm-header-bar {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    z-index: 1000 !important;
+    background: var(--glass) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    border-bottom: 1px solid var(--border) !important;
+  }
+
+  /* Topic chips */
+  html.yt-mobile-mode ytm-feed-filter-chip-bar-renderer,
+  html.yt-mobile-mode .ytm-feed-filter-chip-bar-renderer {
+    position: fixed !important;
+    top: 48px !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    z-index: 999 !important;
+    background: var(--glass) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    border-bottom: 1px solid var(--border) !important;
+    padding: 0 16px !important;
+  }
+
+  /* Bottom bar */
+  html.yt-mobile-mode ytm-pivot-bar-renderer {
+    width: 100% !important;
+    border-top: 1px solid var(--border) !important;
+  }
+
+  /* ── Post card width cap (A3) ──
+     Centred, capped post cards so a single-image post doesn't span an
+     absurd width on a 4K monitor. Targets the top-level post renderers. */
+  html.yt-mobile-mode ytm-backstage-post-renderer,
+  html.yt-mobile-mode ytm-post-renderer,
+  html.yt-mobile-mode ytm-shared-post-renderer {
+    max-width: clamp(560px, 60vw, 720px) !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+
+  /* ── Post image fade-in (D11) ──
+     Images start invisible and fade in. animation-fill-mode: forwards keeps
+     the final opacity:1 after the animation ends, so an image that is still
+     loading doesn't fall back to opacity:0 (which the :not() rule would set)
+     between the animation ending and the load event firing. */
+  @keyframes yt-ext-fade-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+  html.yt-mobile-mode ytm-backstage-image-renderer img:not([data-yt-ext-loaded]) {
+    opacity: 0;
+  }
+  html.yt-mobile-mode ytm-backstage-image-renderer img {
+    animation: yt-ext-fade-in 240ms ease-out forwards !important;
+  }
+
+  /* ── Single-image post: full-width container, centered contained image ── */
+  html.yt-mobile-mode ytm-backstage-image-renderer.ytmBackstagePostRendererHostSingleImageAttachment,
+  html.yt-mobile-mode ytm-backstage-image-renderer.ytmBackstageImageRendererHostPostImageContainerFull {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    max-height: clamp(360px, 65vh, 620px) !important;
+    aspect-ratio: auto !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    overflow: hidden !important;
+    border-radius: 10px !important;
+    margin: 8px auto !important;
+    padding: 0 !important;
+    background: rgba(255, 255, 255, 0.04) !important;
+  }
+
+  /* Single-image post imgs: centered, contained (no cropping) */
+  html.yt-mobile-mode ytm-backstage-image-renderer.ytmBackstagePostRendererHostSingleImageAttachment img,
+  html.yt-mobile-mode ytm-backstage-image-renderer.ytmBackstageImageRendererHostPostImageContainerFull img,
+  html.yt-mobile-mode ytm-backstage-post-renderer img:not(.ytmBackstageImageRendererHostPostImage),
+  html.yt-mobile-mode ytm-post-renderer img:not(.ytmBackstageImageRendererHostPostImage),
+  html.yt-mobile-mode ytm-shared-post-renderer img {
+    width: auto !important;
+    max-width: 100% !important;
+    height: auto !important;
+    max-height: clamp(360px, 65vh, 620px) !important;
+    object-fit: contain !important;
+    display: block !important;
+    margin: 0 auto !important;
+    border-radius: 10px !important;
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+  }
+
+  /* Fallback for post image renderers that don't carry the
+     SingleImageAttachment / PostImageContainerFull class names (e.g. on
+     channel pages or other contexts). Targets the image renderer more
+     broadly so the cap + centering + radius still apply, but uses a
+     looser selector so it doesn't override the specific rules above. */
+  html.yt-mobile-mode ytm-backstage-image-renderer:not(.ytmBackstagePostRendererHostSingleImageAttachment):not(.ytmBackstageImageRendererHostPostImageContainerFull):not(.ytmBackstageImageRendererHostPostImageContainerCropped) {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    max-height: clamp(360px, 65vh, 620px) !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    overflow: hidden !important;
+    border-radius: 10px !important;
+    margin: 8px auto !important;
+    padding: 0 !important;
+    background: rgba(255, 255, 255, 0.04) !important;
+  }
+  html.yt-mobile-mode ytm-backstage-image-renderer:not(.ytmBackstagePostRendererHostSingleImageAttachment):not(.ytmBackstageImageRendererHostPostImageContainerFull):not(.ytmBackstageImageRendererHostPostImageContainerCropped) img {
+    width: auto !important;
+    max-width: 100% !important;
+    height: auto !important;
+    max-height: clamp(360px, 65vh, 620px) !important;
+    object-fit: contain !important;
+    display: block !important;
+    margin: 0 auto !important;
+    border-radius: 10px !important;
+  }
+
+  /* ── Multi-image (carousel) post: large half-width slides, horizontally scrollable ── */
+
+  /* Scroll container: horizontal gap between slides, snap scrolling, hidden native scrollbar */
+  html.yt-mobile-mode ytm-post-multi-image-renderer {
+    gap: 8px !important;
+    padding: 0 !important;
+    overflow-x: auto !important;
+    scroll-snap-type: x mandatory !important;
+    scroll-behavior: smooth !important;
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+    position: relative !important;
+  }
+  html.yt-mobile-mode ytm-post-multi-image-renderer::-webkit-scrollbar { display: none !important; }
+
+  /* Right-edge fade gradient — hidden when PostImages marks the carousel as at-end.
+     position:absolute keeps the fade pinned to the right edge of the visible
+     scroll viewport regardless of how far the user has scrolled. */
+  html.yt-mobile-mode ytm-post-multi-image-renderer::after {
+    content: "" !important;
+    position: absolute !important;
+    top: 0 !important;
+    right: 0 !important;
+    width: 32px !important;
+    height: 100% !important;
+    background: linear-gradient(to right, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.85)) !important;
+    pointer-events: none !important;
+    z-index: 1 !important;
+  }
+  html.yt-mobile-mode ytm-post-multi-image-renderer[data-yt-ext-carousel-end="1"]::after { display: none !important; }
+
+  /* Slide containers: large portrait cells. 4:5 aspect gives the carousel
+     real visual weight on desktop (close to the height of a single-image
+     post), while still showing 2 cells at a time on narrow viewports. */
+  html.yt-mobile-mode .ytmPostMultiImageRendererHostImageContainer {
+    flex: 0 0 calc(50% - 4px) !important;
+    width: calc(50% - 4px) !important;
+    height: auto !important;
+    aspect-ratio: 4 / 5 !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    overflow: hidden !important;
+    border-radius: 10px !important;
+    margin: 0 !important;
+    background: rgba(255, 255, 255, 0.04) !important;
+    padding: 0 !important;
+    scroll-snap-align: start !important;
+  }
+
+  /* Image-renderers inside slide containers: fill the container */
+  html.yt-mobile-mode .ytmPostMultiImageRendererHostImageContainer ytm-backstage-image-renderer.ytmBackstageImageRendererHostPostImageContainerCropped {
+    width: 100% !important;
+    height: 100% !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    position: static !important;
+    transform: none !important;
+  }
+
+  /* Carousel slide imgs: fill the cell, cover (fills portrait cells) */
+  html.yt-mobile-mode .ytmPostMultiImageRendererHostImageContainer ytm-backstage-image-renderer.ytmBackstageImageRendererHostPostImageContainerCropped img {
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    object-fit: cover !important;
+    display: block !important;
+    margin: 0 !important;
+    border-radius: 10px !important;
+  }
+
+  /* On wide viewports, narrow the cells to ~33% so 3 are visible at once.
+     The 4:5 aspect carries over from the base rule above. The "peek" hint
+     is provided by the right-edge fade gradient. */
+  @media (min-width: 992px) {
+    html.yt-mobile-mode .ytmPostMultiImageRendererHostImageContainer {
+      flex: 0 0 calc(33.333% - 6px) !important;
+      width: calc(33.333% - 6px) !important;
+    }
+  }
+
+  /* Widescreen Watch Page layout overrides */
+  :root {
+    /* Clamps suggestions sidebar width between 320px and 420px, scaling dynamically with resolution */
+    --yt-watch-sidebar-width: clamp(320px, 26vw, 420px) !important;
+  }
+
+  /* 1. Main watch container: reserve space dynamically on the right for suggestions */
+  html.yt-mobile-watch-mode ytm-watch {
+    margin-right: var(--yt-watch-sidebar-width) !important;
+    margin-top: 0 !important;
+    padding-right: 0 !important;
+    padding-top: 0 !important;
+    position: relative !important;
+    display: block !important;
+    width: auto !important;
+  }
+
+  /* Prevent placeholder elements from introducing unwanted margin offsets */
+  html.yt-mobile-watch-mode ytm-watch .player-placeholder,
+  html.yt-mobile-watch-mode ytm-watch .player-size {
+    margin-bottom: 0 !important;
+    margin-top: 0 !important;
+  }
+
+  /* 2. Video Player Bounding Box (Direct Child of Body): stretch left, anchor under header, enforce real aspect ratio height */
+  html.yt-mobile-watch-mode div#player-container-id.player-container {
+    position: absolute !important;
+    top: 48px !important;
+    left: 0 !important;
+    right: var(--yt-watch-sidebar-width) !important;
+    bottom: auto !important; /* CRITICAL: Override native dynamic bottom so height: 100vw ratio is respected and container isn't H: 0px! */
+    width: auto !important;
+    max-width: calc(100vw - var(--yt-watch-sidebar-width)) !important;
+    height: calc((100vw - var(--yt-watch-sidebar-width)) * 0.5625) !important; /* CRITICAL: Force the real 16:9 height so HUD sits at bottom! */
+    z-index: 2 !important;
+    background: #000 !important;
+    overflow: hidden !important;
+  }
+
+  /* 3. Inner Video Player Aspect-Ratio Box: span full width and height of the parent container */
+  html.yt-mobile-watch-mode div#player-container-id.player-container #player.player-api.player-size {
+    position: absolute !important;
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    left: 0 !important;
+    right: 0 !important;
+    top: 0 !important;
+    bottom: 0 !important;
+    padding-bottom: 0 !important; /* Remove the dynamic padding to use height: 100% */
+  }
+
+  /* 3b. Force dynamic sub-player wrappers (movie player, container, etc.) to fill parent container */
+  html.yt-mobile-watch-mode div#player-container-id.player-container .html5-video-player,
+  html.yt-mobile-watch-mode div#player-container-id.player-container .html5-video-container {
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  /* 4. Left metadata and comments under player: expand to fill 100% of left column */
+  html.yt-mobile-watch-mode ytm-single-column-watch-next-results-renderer {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 16px 16px 16px !important; /* CRITICAL: Remove padding-top to reduce spacing below video player! */
+    box-sizing: border-box !important;
+  }
+
+  /* Reset top margin and padding on the first child under results renderer to keep spacing tight */
+  html.yt-mobile-watch-mode ytm-single-column-watch-next-results-renderer > :first-child {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+  }
+
+  /* 5. Suggestions sidebar: position fixed on the right with dynamic clamp width */
+  html.yt-mobile-watch-mode ytm-item-section-renderer[section-identifier="related-items"] {
+    position: fixed !important;
+    top: 48px !important;
+    right: 0 !important;
+    width: var(--yt-watch-sidebar-width) !important;
+    height: calc(100vh - 48px) !important;
+    overflow-y: auto !important;
+    box-sizing: border-box !important;
+    border-left: 1px solid rgba(255, 255, 255, 0.08) !important;
+    background: #0f0f0f !important; /* Standard minimal background color */
+    z-index: 998 !important;
+    margin: 0 !important;
+    padding: 12px !important;
+  }
+
+  /* 6. Force suggestion items into exactly one column inside sidebar */
+  html.yt-mobile-watch-mode ytm-item-section-renderer[section-identifier="related-items"] lazy-list,
+  html.yt-mobile-watch-mode ytm-item-section-renderer[section-identifier="related-items"] .lazy-list {
+    display: flex !important;
+    flex-direction: column !important;
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+    padding: 0 !important;
+  }
+
+  /* 7. Minimal related video cards spanning the sidebar width elegantly */
+  html.yt-mobile-watch-mode ytm-item-section-renderer[section-identifier="related-items"] ytm-compact-video-renderer,
+  html.yt-mobile-watch-mode ytm-item-section-renderer[section-identifier="related-items"] ytm-video-with-context-renderer {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important; /* CRITICAL: Override fixed height so the vertical card does not crop! */
+    max-height: none !important;
+    box-sizing: border-box !important;
+    margin: 0 0 16px 0 !important;
+    padding: 0 !important;
+    background: transparent !important; /* Minimal transparent background */
+    border: none !important; /* No flashy custom card borders */
+  }
+
+  /* 7b. Force the inner media item structure into a vertical stacked layout (thumbnail on top, details below) */
+  html.yt-mobile-watch-mode ytm-item-section-renderer[section-identifier="related-items"] ytm-compact-video-renderer,
+  html.yt-mobile-watch-mode ytm-item-section-renderer[section-identifier="related-items"] ytm-video-with-context-renderer ytm-media-item {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 8px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important; /* CRITICAL: Prevent inner container height constraints */
+    max-height: none !important;
+    box-sizing: border-box !important;
+  }
+
+  /* 8. Full-width 16:9 thumbnail sizes for vertical stacked cards inside sidebar */
+  html.yt-mobile-watch-mode ytm-item-section-renderer[section-identifier="related-items"] ytm-compact-video-renderer ytm-compact-thumbnail,
+  html.yt-mobile-watch-mode ytm-item-section-renderer[section-identifier="related-items"] ytm-compact-video-renderer .compact-media-item-image,
+  html.yt-mobile-watch-mode ytm-item-section-renderer[section-identifier="related-items"] ytm-compact-video-renderer .ytm-compact-thumbnail,
+  html.yt-mobile-watch-mode ytm-item-section-renderer[section-identifier="related-items"] ytm-video-with-context-renderer a.media-item-thumbnail-container,
+  html.yt-mobile-watch-mode ytm-item-section-renderer[section-identifier="related-items"] ytm-video-with-context-renderer .media-item-thumbnail-container,
+  html.yt-mobile-watch-mode ytm-item-section-renderer[section-identifier="related-items"] ytm-video-with-context-renderer ytm-thumbnail-overlay {
+    flex-shrink: 0 !important;
+    width: 100% !important; /* Stretch to occupy the full width of the card */
+    height: auto !important;
+    max-height: none !important;
+    aspect-ratio: 16/9 !important; /* Keep a perfect cinematic 16:9 aspect ratio */
+    border-radius: 8px !important;
+    overflow: hidden !important;
+  }
+
+  /* 8b. Ensure thumbnail image elements correctly fill their 16:9 aspect box */
+  html.yt-mobile-watch-mode ytm-item-section-renderer[section-identifier="related-items"] ytm-video-with-context-renderer ytm-thumbnail-cover,
+  html.yt-mobile-watch-mode ytm-item-section-renderer[section-identifier="related-items"] ytm-video-with-context-renderer .video-thumbnail-container-large,
+  html.yt-mobile-watch-mode ytm-item-section-renderer[section-identifier="related-items"] ytm-video-with-context-renderer .video-thumbnail-img,
+  html.yt-mobile-watch-mode ytm-item-section-renderer[section-identifier="related-items"] ytm-video-with-context-renderer img.ytCoreImageHost {
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    padding-bottom: 0 !important; /* CRITICAL: Remove native aspect-ratio padding tricks that shift the image downward */
+    padding-top: 0 !important;
+    object-fit: cover !important;
+  }
+
+  /* 8c. Ensure details elements and text sit beautifully underneath and span the full card width */
+  html.yt-mobile-watch-mode ytm-item-section-renderer[section-identifier="related-items"] ytm-compact-video-renderer .compact-media-item-metadata,
+  html.yt-mobile-watch-mode ytm-item-section-renderer[section-identifier="related-items"] ytm-compact-video-renderer .compact-video-details,
+  html.yt-mobile-watch-mode ytm-item-section-renderer[section-identifier="related-items"] ytm-video-with-context-renderer .media-item-details,
+  html.yt-mobile-watch-mode ytm-item-section-renderer[section-identifier="related-items"] ytm-video-with-context-renderer .media-item-info,
+  html.yt-mobile-watch-mode ytm-item-section-renderer[section-identifier="related-items"] ytm-video-with-context-renderer .media-item-metadata,
+  html.yt-mobile-watch-mode ytm-item-section-renderer[section-identifier="related-items"] ytm-video-with-context-renderer .details {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* 8d. Ensure beautiful spacing between the channel logo avatar and the metadata */
+  html.yt-mobile-watch-mode ytm-item-section-renderer[section-identifier="related-items"] ytm-video-with-context-renderer .media-item-details {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: flex-start !important;
+    gap: 12px !important; /* Elegant spacing between channel logo and metadata texts */
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* 9. Zoom/Responsive collapse behavior when CSS viewport falls below 992px */
+  @media (max-width: 992px) {
+    :root {
+      --yt-watch-sidebar-width: 0px !important;
+    }
+
+    html.yt-mobile-watch-mode ytm-watch {
+      margin-right: 0 !important;
+    }
+
+    html.yt-mobile-watch-mode div#player-container-id.player-container {
+      position: relative !important; /* Restore normal block flow so metadata doesn't slip underneath! */
+      top: 0 !important;
+      margin-top: 48px !important; /* CRITICAL: Start exactly below the 48px fixed header bar so it does not slip underneath! */
+      left: 0 !important;
+      right: 0 !important;
+      width: 100% !important;
+      max-width: 100% !important;
+      height: 56.25vw !important; /* Force correct aspect-ratio spacing in relative block flow */
+    }
+
+    /* Hide the native placeholder to avoid double spacing in relative flow */
+    html.yt-mobile-watch-mode ytm-watch .player-placeholder,
+    html.yt-mobile-watch-mode ytm-watch .player-size,
+    html.yt-mobile-watch-mode ytm-watch .player-size-placeholder,
+    html.yt-mobile-watch-mode ytm-watch #player-placeholder-id,
+    html.yt-mobile-watch-mode ytm-watch ytm-player-placeholder,
+    html.yt-mobile-watch-mode ytm-watch .player-container-placeholder {
+      display: none !important;
+      height: 0 !important;
+      padding: 0 !important;
+      padding-bottom: 0 !important;
+      margin: 0 !important;
+    }
+
+    html.yt-mobile-watch-mode ytm-item-section-renderer[section-identifier="related-items"] {
+      position: static !important;
+      width: 100% !important;
+      height: auto !important;
+      border-left: none !important;
+      background: transparent !important;
+      padding: 16px !important;
+      margin-top: 16px !important;
+      transition: none !important;
+    }
+  }
+}

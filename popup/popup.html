@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>YouTube Mobile Enhanced</title>
+  <style>
+    :root {
+      --bg: #0f0f12;
+      --card: #16161a;
+      --border: #24242b;
+      --text: #fff;
+      --text-dim: #8f8f9d;
+      --accent: #ff0000;
+      --toggle-off: #2a2a35;
+      --toggle-on: #8b3cf0;
+      --key-bg: #27272a;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      width: 300px;
+      background: var(--bg);
+      font-family: -apple-system, system-ui, sans-serif;
+      color: var(--text);
+      padding: 12px;
+      user-select: none;
+      font-size: 12px;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 10px;
+    }
+    .logo {
+      width: 28px;
+      height: 28px;
+      background: var(--accent);
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 700;
+    }
+    .title { font-weight: 600; }
+    .subtitle { font-size: 10px; color: var(--text-dim); }
+
+    .section-label {
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--accent);
+      margin-bottom: 6px;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-bottom: 10px;
+    }
+
+    .row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 10px;
+      cursor: pointer;
+    }
+    .row:not(:last-child) { border-bottom: 1px solid var(--border); }
+    .row-text { flex: 1; }
+    .row-label { font-weight: 500; }
+    .row-desc { font-size: 10px; color: var(--text-dim); margin-top: 1px; }
+
+    .toggle { position: relative; width: 36px; height: 20px; flex-shrink: 0; }
+    .toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
+    .slider {
+      position: absolute;
+      inset: 0;
+      background: var(--toggle-off);
+      border-radius: 10px;
+      transition: background 0.2s;
+    }
+    .slider::before {
+      content: "";
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 16px;
+      height: 16px;
+      background: #a5a5b5;
+      border-radius: 50%;
+      transition: transform 0.2s, background 0.2s;
+    }
+    .toggle input:checked + .slider { background: var(--toggle-on); }
+    .toggle input:checked + .slider::before { transform: translateX(16px); background: #fff; }
+    .row.disabled { opacity: 0.35; pointer-events: none; cursor: default; }
+    .toggle input:disabled + .slider { opacity: 0.35; }
+
+    .shortcuts { display: grid; grid-template-columns: 1fr 1fr; }
+    .sc {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 10px;
+      font-size: 11px;
+    }
+    .sc:nth-child(odd) { border-right: 1px solid var(--border); }
+    .sc:nth-child(n+3) { border-top: 1px solid var(--border); }
+    .sc-label { color: var(--text-dim); }
+    .keys { display: flex; align-items: center; gap: 2px; }
+    .key {
+      padding: 1px 5px;
+      background: var(--key-bg);
+      border: 1px solid #3f3f46;
+      border-radius: 3px;
+      font-size: 9px;
+      font-weight: 500;
+    }
+    .sep { font-size: 9px; color: var(--text-dim); }
+
+    .footer {
+      font-size: 9px;
+      color: var(--text-dim);
+      text-align: center;
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid var(--border);
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo">YT</div>
+    <div>
+      <div class="title">Mobile Enhanced</div>
+      <div class="subtitle">Mobile mode, background play & controls</div>
+    </div>
+  </div>
+
+  <div class="section-label">Features</div>
+  <div class="card">
+    <label class="row" for="toggle-mobile">
+      <div class="row-text">
+        <div class="row-label">Mobile Mode</div>
+        <div class="row-desc">Load mobile YouTube on desktop</div>
+      </div>
+      <span class="toggle">
+        <input id="toggle-mobile" type="checkbox" />
+        <span class="slider"></span>
+      </span>
+    </label>
+    <label class="row" for="toggle-background">
+      <div class="row-text">
+        <div class="row-label">Background Play</div>
+        <div class="row-desc">Audio continues when tab hidden</div>
+      </div>
+      <span class="toggle">
+        <input id="toggle-background" type="checkbox" />
+        <span class="slider"></span>
+      </span>
+    </label>
+    <label class="row" for="toggle-keyboard">
+      <div class="row-text">
+        <div class="row-label">Keyboard Controls</div>
+        <div class="row-desc">Playback & volume shortcuts</div>
+      </div>
+      <span class="toggle">
+        <input id="toggle-keyboard" type="checkbox" />
+        <span class="slider"></span>
+      </span>
+    </label>
+    <label class="row" for="toggle-preview">
+      <div class="row-text">
+        <div class="row-label">Video Preview</div>
+        <div class="row-desc">Hover thumbnails to preview videos</div>
+      </div>
+      <span class="toggle">
+        <input id="toggle-preview" type="checkbox" />
+        <span class="slider"></span>
+      </span>
+    </label>
+    <label class="row" for="toggle-previewsound">
+      <div class="row-text">
+        <div class="row-label">Preview Sound</div>
+        <div class="row-desc">Play audio in previews by default</div>
+      </div>
+      <span class="toggle">
+        <input id="toggle-previewsound" type="checkbox" />
+        <span class="slider"></span>
+      </span>
+    </label>
+    <label class="row" for="toggle-singlesidebar">
+      <div class="row-text">
+        <div class="row-label">Single Sidebar</div>
+        <div class="row-desc">Force one suggestion column on watch pages</div>
+      </div>
+      <span class="toggle">
+        <input id="toggle-singlesidebar" type="checkbox" />
+        <span class="slider"></span>
+      </span>
+    </label>
+  </div>
+
+  <div class="section-label">Shortcuts</div>
+  <div class="card">
+    <div class="shortcuts">
+      <div class="sc">
+        <span class="sc-label">Play/Pause</span>
+        <span class="key">Space</span>
+      </div>
+      <div class="sc">
+        <span class="sc-label">Seek</span>
+        <div class="keys"><span class="key">←</span><span class="sep">/</span><span class="key">→</span></div>
+      </div>
+      <div class="sc">
+        <span class="sc-label">Volume</span>
+        <div class="keys"><span class="key">↑</span><span class="sep">/</span><span class="key">↓</span></div>
+      </div>
+      <div class="sc">
+        <span class="sc-label">Fine Vol</span>
+        <div class="keys"><span class="key">⇧</span><span class="sep">+</span><span class="key">↑↓</span></div>
+      </div>
+      <div class="sc">
+        <span class="sc-label">Mute</span>
+        <span class="key">M</span>
+      </div>
+      <div class="sc">
+        <span class="sc-label">Fullscreen</span>
+        <span class="key">F</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">Shortcuts disabled when typing in inputs</div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

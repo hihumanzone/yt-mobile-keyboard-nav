@@ -1,0 +1,68 @@
+{
+  "manifest_version": 3,
+  "name": "YouTube Mobile Enhanced",
+  "version": "1.0",
+  "description": "Forces YouTube mobile mode with background playback and keyboard controls",
+  "permissions": ["declarativeNetRequest", "storage"],
+  "host_permissions": ["*://*.youtube.com/*", "*://*.youtube-nocookie.com/*"],
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_title": "YouTube Mobile Enhanced",
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "background": {
+    "service_worker": "src/background/background.js"
+  },
+  "declarative_net_request": {
+    "rule_resources": [
+      {
+        "id": "ruleset_1",
+        "enabled": true,
+        "path": "rules.json"
+      }
+    ]
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://*.youtube.com/*", "*://*.youtube-nocookie.com/*"],
+      "js": [
+        "src/content/content-core.js",
+        "src/content/content-player.js",
+        "src/content/content-mobile.js",
+        "src/content/content-feed.js",
+        "src/content/content-preview.js",
+        "src/content/content.js"
+      ],
+      "css": [
+        "styles/content-core.css",
+        "styles/content-player.css",
+        "styles/content-preview.css",
+        "styles/content-mobile.css"
+      ],
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["*://*.youtube.com/*", "*://*.youtube-nocookie.com/*"],
+      "js": ["src/inject/inject.js"],
+      "run_at": "document_start",
+      "world": "MAIN"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["src/inject/inject.js"],
+      "matches": ["*://*.youtube.com/*", "*://*.youtube-nocookie.com/*"]
+    }
+  ]
+}

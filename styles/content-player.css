@@ -1,0 +1,507 @@
+/* HUD Overlay */
+.yt-ext-hud {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 2147483647;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity var(--yt-ext-trans), visibility var(--yt-ext-trans);
+  will-change: opacity, visibility;
+}
+
+.yt-ext-hud.visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+.yt-ext-hud.visible .yt-ext-hud-content {
+  transform: scale(1);
+}
+
+.yt-ext-hud.hiding {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.yt-ext-hud.yt-ext-hud-playpause .yt-ext-hud-icon svg {
+  width: 76px;
+  height: 76px;
+}
+
+.yt-ext-hud .yt-ext-hud-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 110px;
+  height: 110px;
+  padding: 10px;
+  box-sizing: border-box;
+  background: var(--yt-ext-bg);
+  border: 1px solid var(--yt-ext-border);
+  border-radius: 14px;
+  box-shadow: var(--yt-ext-shadow);
+  transform: scale(0.9);
+  transition: transform var(--yt-ext-trans);
+}
+
+.yt-ext-hud .yt-ext-hud-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--yt-ext-text);
+}
+
+.yt-ext-hud .yt-ext-hud-icon svg {
+  width: 48px;
+  height: 48px;
+  fill: currentColor;
+}
+
+.yt-ext-hud .yt-ext-hud-text {
+  margin-top: 4px;
+  color: var(--yt-ext-text);
+  font-family: var(--yt-ext-font);
+  font-size: 11px;
+  font-weight: 500;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.yt-ext-hud .yt-ext-hud-text[hidden] {
+  display: none;
+}
+
+/* Volume Panel */
+.yt-ext-volume-panel {
+  position: absolute;
+  right: 24px;
+  bottom: 24px;
+  z-index: 2147483646;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 14px;
+  background: var(--yt-ext-bg-solid);
+  border: 1px solid var(--yt-ext-border);
+  border-radius: 8px;
+  box-shadow: var(--yt-ext-shadow);
+  font-family: var(--yt-ext-font);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity var(--yt-ext-trans), visibility var(--yt-ext-trans);
+  pointer-events: none;
+}
+
+.yt-ext-volume-panel.visible {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.yt-ext-volume-panel:hover,
+.yt-ext-volume-panel.expanded {
+  border-color: var(--yt-ext-border-hover);
+}
+
+.yt-ext-volume-panel:hover .yt-ext-slider-wrapper,
+.yt-ext-volume-panel.expanded .yt-ext-slider-wrapper {
+  width: 120px;
+  opacity: 1;
+}
+
+.yt-ext-volume-panel:hover .yt-ext-volume-value,
+.yt-ext-volume-panel.expanded .yt-ext-volume-value {
+  width: 38px;
+  opacity: 1;
+  min-width: 38px;
+}
+
+.yt-ext-volume-panel.boost-unlocked {
+  border-color: var(--yt-ext-accent);
+}
+
+.yt-ext-volume-panel.boost-unlocked .yt-ext-slider-zone-divider {
+  left: 33.3333%;
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.yt-ext-volume-panel.boosted {
+  border-color: var(--yt-ext-accent);
+}
+
+.yt-ext-volume-panel.boosted .yt-ext-volume-value {
+  color: var(--yt-ext-accent);
+  font-weight: 600;
+}
+
+.yt-ext-volume-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  color: var(--yt-ext-text);
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.yt-ext-volume-btn:hover {
+  background: var(--yt-ext-hover-bg);
+  color: var(--yt-ext-accent);
+}
+
+.yt-ext-volume-btn:active {
+  background: var(--yt-ext-active-bg);
+}
+
+.yt-ext-volume-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.yt-ext-volume-icon {
+  fill: currentColor;
+}
+
+.yt-ext-volume-icon path {
+  transition: opacity 0.15s, fill 0.15s;
+}
+
+.yt-ext-volume-icon .yt-ext-mute-line {
+  opacity: 0;
+  stroke-dasharray: 30;
+  stroke-dashoffset: 30;
+  transition: opacity 0.1s, stroke-dashoffset 0.1s;
+}
+
+.yt-ext-volume-icon.muted path {
+  opacity: 0.4;
+}
+
+.yt-ext-volume-icon.muted .yt-ext-wave-1,
+.yt-ext-volume-icon.muted .yt-ext-wave-2 {
+  opacity: 0 !important;
+}
+
+.yt-ext-volume-icon.muted .yt-ext-mute-line {
+  opacity: 1;
+  stroke-dashoffset: 0;
+}
+
+.yt-ext-volume-icon.zero .yt-ext-wave-1,
+.yt-ext-volume-icon.zero .yt-ext-wave-2 {
+  opacity: 0 !important;
+}
+
+.yt-ext-volume-icon.low .yt-ext-wave-2 {
+  opacity: 0;
+}
+
+.yt-ext-volume-icon.high .yt-ext-wave-1,
+.yt-ext-volume-icon.high .yt-ext-wave-2 {
+  opacity: 1;
+}
+
+.yt-ext-volume-icon.high.boosted .yt-ext-wave-1,
+.yt-ext-volume-icon.high.boosted .yt-ext-wave-2 {
+  fill: var(--yt-ext-accent);
+}
+
+.yt-ext-slider-wrapper {
+  position: relative;
+  width: 0;
+  opacity: 0;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  overflow: visible;
+  transition: width var(--yt-ext-trans), opacity var(--yt-ext-trans);
+}
+
+.yt-ext-slider-wrapper:hover .yt-ext-slider-tooltip {
+  opacity: 1;
+}
+
+#yt-ext-volume-slider {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  background: transparent;
+  outline: none;
+  border: none;
+  cursor: pointer;
+  z-index: 4;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+#yt-ext-volume-slider::-webkit-slider-thumb {
+  width: 12px;
+  height: 12px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+#yt-ext-volume-slider::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+#yt-ext-volume-slider::-moz-range-track {
+  background: transparent;
+  border: none;
+}
+
+.yt-ext-slider-track {
+  position: absolute;
+  width: 100%;
+  height: 3px;
+  border-radius: 3px;
+  pointer-events: none;
+}
+
+.yt-ext-slider-track-bg {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: var(--yt-ext-track-bg);
+  border-radius: 3px;
+}
+
+.yt-ext-slider-fill {
+  position: absolute;
+  height: 100%;
+  top: 0;
+  left: 0;
+  width: 0;
+  background: var(--yt-ext-accent);
+  border-radius: 3px;
+  z-index: 0;
+}
+
+.yt-ext-slider-zone-divider {
+  position: absolute;
+  height: 100%;
+  top: 0;
+  left: 100%;
+  width: 1px;
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateX(-0.5px);
+  z-index: 1;
+}
+
+.yt-ext-slider-tooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  transform: translateX(-50%);
+  padding: 3px 6px;
+  background: #16161a;
+  border: 1px solid var(--yt-ext-border);
+  border-radius: 4px;
+  font-family: var(--yt-ext-font);
+  font-size: 10px;
+  color: var(--yt-ext-text);
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.yt-ext-slider-tooltip::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 3px solid transparent;
+  border-top-color: #16161a;
+}
+
+.yt-ext-slider-ticks {
+  position: absolute;
+  width: 100%;
+  top: 50%;
+  height: 6px;
+  transform: translateY(-50%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.yt-ext-slider-tick {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  width: 1px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.yt-ext-slider-tick.major {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.yt-ext-volume-value {
+  min-width: 0;
+  width: 0;
+  opacity: 0;
+  overflow: hidden;
+  color: var(--yt-ext-text);
+  font-family: var(--yt-ext-font);
+  font-size: 12px;
+  font-weight: 500;
+  text-align: right;
+  transition: width var(--yt-ext-trans), opacity var(--yt-ext-trans);
+}
+
+:fullscreen .yt-ext-volume-panel,
+:-webkit-full-screen .yt-ext-volume-panel {
+  right: 80px;
+  bottom: 100px;
+}
+
+.yt-ext-cursor-hidden,
+.yt-ext-cursor-hidden * {
+  cursor: none !important;
+}
+
+/* Transport Controls — CSS-only repositioning of play/prev/next above progress bar */
+.ytp-large-play-button {
+  display: none !important;
+}
+
+/* Reposition the native middle controls container to bottom center */
+.player-controls-middle {
+  position: absolute !important;
+  top: auto !important;
+  bottom: 36px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  width: auto !important;
+  height: auto !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  z-index: 50 !important;
+  pointer-events: auto !important;
+}
+
+/* Center the core buttons row */
+.player-controls-middle-core-buttons {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 16px !important;
+  width: auto !important;
+}
+
+/* Hide the double-tap-to-seek accessibility buttons */
+.player-controls-middle .player-control-seek-icon-a11y {
+  display: none !important;
+}
+
+/* Transport buttons — shared base styles */
+.player-middle-controls-prev-next-button,
+button.player-control-play-pause-icon {
+  background: rgba(0, 0, 0, 0.55) !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border: none !important;
+  cursor: pointer !important;
+  pointer-events: auto !important;
+  flex-shrink: 0 !important;
+  position: relative !important;
+  appearance: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background-image: none !important;
+  padding: 0 !important;
+}
+
+.player-middle-controls-prev-next-button:hover,
+button.player-control-play-pause-icon:hover {
+  background: rgba(0, 0, 0, 0.8) !important;
+}
+
+/* Size overrides per button type */
+.player-middle-controls-prev-next-button {
+  width: 48px !important;
+  height: 48px !important;
+}
+
+button.player-control-play-pause-icon {
+  width: 56px !important;
+  height: 56px !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+}
+
+/* Hide ALL native inner elements (host may use c3-icon, svg, div, etc.) */
+.player-middle-controls-prev-next-button > *,
+button.player-control-play-pause-icon > * {
+  display: none !important;
+}
+
+/* Inject our own centered icon via pseudo-element */
+.player-middle-controls-prev-next-button::after,
+button.player-control-play-pause-icon::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #fff;
+  pointer-events: none;
+}
+
+.player-middle-controls-prev-next-button::after {
+  width: 28px;
+  height: 28px;
+}
+
+button.player-control-play-pause-icon::after {
+  width: 32px;
+  height: 32px;
+}
+
+/* Per-button SVG masks — shape-rendering='geometricPrecision' keeps thin lines clean */
+.player-middle-controls-prev-next-button[aria-label*="Previous" i]::after {
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' shape-rendering='geometricPrecision'%3E%3Cpath d='M6 6h2v12H6zm3.5 6l8.5 6V6z'/%3E%3C/svg%3E") no-repeat center / contain;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' shape-rendering='geometricPrecision'%3E%3Cpath d='M6 6h2v12H6zm3.5 6l8.5 6V6z'/%3E%3C/svg%3E") no-repeat center / contain;
+}
+
+.player-middle-controls-prev-next-button[aria-label*="Next" i]::after {
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' shape-rendering='geometricPrecision'%3E%3Cpath d='M6 18l8.5-6L6 6v12zm10-12v12h2V6h-2z'/%3E%3C/svg%3E") no-repeat center / contain;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' shape-rendering='geometricPrecision'%3E%3Cpath d='M6 18l8.5-6L6 6v12zm10-12v12h2V6h-2z'/%3E%3C/svg%3E") no-repeat center / contain;
+}
+
+button.player-control-play-pause-icon[aria-label*="Play" i]::after {
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' shape-rendering='geometricPrecision'%3E%3Cpath d='M5 4.623V19.38a1.5 1.5 0 002.26 1.29L22 12 7.26 3.33A1.5 1.5 0 005 4.623Z'/%3E%3C/svg%3E") no-repeat center / contain;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' shape-rendering='geometricPrecision'%3E%3Cpath d='M5 4.623V19.38a1.5 1.5 0 002.26 1.29L22 12 7.26 3.33A1.5 1.5 0 005 4.623Z'/%3E%3C/svg%3E") no-repeat center / contain;
+}
+
+button.player-control-play-pause-icon[aria-label*="Pause" i]::after {
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' shape-rendering='geometricPrecision'%3E%3Cpath d='M6 19h4V5H6v14zm8-14v14h4V5h-4z'/%3E%3C/svg%3E") no-repeat center / contain;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' shape-rendering='geometricPrecision'%3E%3Cpath d='M6 19h4V5H6v14zm8-14v14h4V5h-4z'/%3E%3C/svg%3E") no-repeat center / contain;
+}
+
+/* Disabled prev button (e.g. first video in playlist) */
+.player-middle-controls-prev-next-button.icon-disable {
+  opacity: 0.4 !important;
+  cursor: default !important;
+}
+
+/* Fullscreen positioning is handled by adjustControlsPosition() in content.js */
