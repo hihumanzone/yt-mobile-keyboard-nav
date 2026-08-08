@@ -8,8 +8,8 @@
   
   const FEATURE_DEFAULTS = Object.freeze({
     mobile: true,
-    background: false,
-    keyboard: false,
+    background: true,
+    keyboard: true,
     preview: true,
     previewSound: false,
     singleSidebar: true,

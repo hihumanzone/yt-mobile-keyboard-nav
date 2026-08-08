@@ -12,6 +12,7 @@ const sync = (on) =>
 
 const reloadTabs = async () =>
   (await chrome.tabs.query({ url: [CONFIG.YOUTUBE_URL_PATTERN] }))
+    .filter((t) => t.url && !t.url.includes("studio.youtube.com") && !t.url.includes("music.youtube.com"))
     .forEach((t) => t.id && chrome.tabs.reload(t.id).catch(() => {}));
 
 const init = async () => {

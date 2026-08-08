@@ -1,7 +1,7 @@
 const FEATURES = Object.freeze({
   mobile: Object.freeze({ key: "ytMobileEnabled", defaultValue: true, toggleId: "toggle-mobile" }),
-  background: Object.freeze({ key: "ytBackgroundEnabled", defaultValue: false, toggleId: "toggle-background" }),
-  keyboard: Object.freeze({ key: "ytKeyboardEnabled", defaultValue: false, toggleId: "toggle-keyboard" }),
+  background: Object.freeze({ key: "ytBackgroundEnabled", defaultValue: true, toggleId: "toggle-background" }),
+  keyboard: Object.freeze({ key: "ytKeyboardEnabled", defaultValue: true, toggleId: "toggle-keyboard" }),
   preview: Object.freeze({ key: "ytPreviewEnabled", defaultValue: true, toggleId: "toggle-preview" }),
   previewSound: Object.freeze({ key: "ytPreviewSoundEnabled", defaultValue: false, toggleId: "toggle-previewsound" }),
   singleSidebar: Object.freeze({ key: "ytSingleSidebarEnabled", defaultValue: true, toggleId: "toggle-singlesidebar" }),

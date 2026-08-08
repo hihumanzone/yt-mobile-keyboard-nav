@@ -36,6 +36,7 @@
   "content_scripts": [
     {
       "matches": ["*://*.youtube.com/*", "*://*.youtube-nocookie.com/*"],
+      "exclude_matches": ["*://studio.youtube.com/*"],
       "js": [
         "src/content/content-core.js",
         "src/content/content-player.js",
@@ -54,6 +55,7 @@
     },
     {
       "matches": ["*://*.youtube.com/*", "*://*.youtube-nocookie.com/*"],
+      "exclude_matches": ["*://studio.youtube.com/*"],
       "js": ["src/inject/inject.js"],
       "run_at": "document_start",
       "world": "MAIN"

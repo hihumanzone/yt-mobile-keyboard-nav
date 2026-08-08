@@ -1,6 +1,8 @@
 (() => {
   "use strict";
 
+  if (location.hostname === "studio.youtube.com") return;
+
   const ns = (globalThis.YTME ||= {});
   const {
     CONFIG,

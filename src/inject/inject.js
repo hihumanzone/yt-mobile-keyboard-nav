@@ -1,6 +1,8 @@
 (() => {
   "use strict";
 
+  if (location.hostname === "studio.youtube.com") return;
+
   const CONFIG = Object.freeze({
     ACTIVITY_MIN_DELAY_MS: 55000,
     ACTIVITY_MAX_DELAY_MS: 65000,
