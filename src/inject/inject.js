@@ -11,27 +11,6 @@
     IO_ROOT_MARGIN_BOTTOM_PX: 5000,
     IO_ROOT_MARGIN_TOP_PX: 500,
     IO_ROOT_MARGIN_SIDE_PX: 500,
-
-    /* Top controls and settings bottom-sheet fullscreen interaction */
-    TOP_CONTROLS_INTERACTION_TIMEOUT_MS: 500,
-    TOP_CONTROLS_SELECTOR: [
-      "player-top-controls",
-      ".player-controls-top",
-      ".player-settings-icon",
-      "ytm-closed-captioning-button",
-      "player-autonav-toggle",
-      "bottom-sheet-container",
-      "bottom-sheet-layout",
-      "player-settings-menu",
-      "yt-list-item-view-model",
-      "ytm-menu-item",
-      "ytw-scrim",
-      "[aria-label*='Setting' i]",
-      "[aria-label*='Quality' i]",
-      "[aria-label*='Speed' i]",
-      "[aria-label*='Subtitle' i]",
-      "[aria-label*='Audio' i]",
-    ].join(", "),
   });
 
   /* ===========================================================================
@@ -191,84 +170,58 @@
 
   /* ===========================================================================
    * Top controls fullscreen interaction & bottom-sheet relocator:
-   * YouTube Mobile drops clicks on inline top controls (.player-settings-icon,
-   * captions, autoplay) when document.fullscreenElement is active.
-   * We intercept interactions on top controls and spoof fullscreenElement as null
-   * during the event window so YouTube's event dispatcher cleanly opens the
-   * settings menu bottom sheet and toggles captions/autoplay.
+   * YouTube Mobile marks inline top controls components as inactive/suspended
+   * (.Ua = true) when entering fullscreen, blocking clicks on .player-settings-icon.
+   * We hook default_c3_base.qq so components remain active, allowing the settings
+   * menu and submenus to open smoothly without touching document.fullscreenElement.
    *
    * When opened in fullscreen, <bottom-sheet-container> is appended by YouTube to
    * ytm-app (behind the fullscreen player). The relocator moves it inside
    * #player-container-id so it renders on the browser's fullscreen Top Layer.
    * =========================================================================== */
   (() => {
-    let isInteracting = false;
-    let timer = null;
+    /* 1. Protect components from being marked as disposed/suspended (Ua=true) */
+    const hookC3 = () => {
+      const c3 = window.default_c3_base;
+      if (!c3 || !c3.qq) return false;
 
-    const markInteracting = (e) => {
-      if (e.target?.closest?.(CONFIG.TOP_CONTROLS_SELECTOR)) {
-        isInteracting = true;
-        if (timer) clearTimeout(timer);
-        timer = setTimeout(() => {
-          isInteracting = false;
-          timer = null;
-        }, CONFIG.TOP_CONTROLS_INTERACTION_TIMEOUT_MS);
+      const origQq = c3.qq;
+      c3.qq = function (a) {
+        if (a) {
+          try {
+            Object.defineProperty(a, "Ua", {
+              get: () => false,
+              set: () => {},
+              configurable: true,
+            });
+          } catch (e) {
+            a.Ua = false;
+          }
+        }
+        return origQq.call(this, a);
+      };
+      return true;
+    };
+
+    if (!hookC3()) {
+      let attempts = 0;
+      const t = setInterval(() => {
+        attempts++;
+        if (hookC3() || attempts > 200) clearInterval(t);
+      }, 20);
+    }
+
+    /* 2. Move bottom-sheet-container inside the fullscreen player container */
+    const getNativeFullscreenElement = () => {
+      try {
+        const origFs = Object.getOwnPropertyDescriptor(Document.prototype, "fullscreenElement")?.get;
+        const origWebkit = Object.getOwnPropertyDescriptor(Document.prototype, "webkitFullscreenElement")?.get;
+        return (origFs ? origFs.call(document) : null) || (origWebkit ? origWebkit.call(document) : null);
+      } catch (e) {
+        return document.fullscreenElement || document.webkitFullscreenElement || null;
       }
     };
 
-    ["pointerdown", "mousedown", "touchstart", "click"].forEach((evt) => {
-      window.addEventListener(evt, markInteracting, { capture: true, passive: true });
-      document.addEventListener(evt, markInteracting, { capture: true, passive: true });
-    });
-
-    const origProtoFs = Object.getOwnPropertyDescriptor(Document.prototype, "fullscreenElement");
-    const origProtoWebkitFs = Object.getOwnPropertyDescriptor(Document.prototype, "webkitFullscreenElement");
-
-    const getNativeFullscreenElement = () => {
-      try {
-        if (origProtoFs?.get) return origProtoFs.get.call(document);
-        if (origProtoWebkitFs?.get) return origProtoWebkitFs.get.call(document);
-      } catch (e) {}
-      return null;
-    };
-
-    const patchDoc = (target) => {
-      if (!target) return;
-      try {
-        Object.defineProperty(target, "fullscreenElement", {
-          get() {
-            if (isInteracting) return null;
-            try {
-              const receiver = (this instanceof Document) ? this : document;
-              return origProtoFs?.get ? origProtoFs.get.call(receiver) : null;
-            } catch (e) {
-              return null;
-            }
-          },
-          configurable: true,
-          enumerable: true,
-        });
-
-        Object.defineProperty(target, "webkitFullscreenElement", {
-          get() {
-            if (isInteracting) return null;
-            try {
-              const receiver = (this instanceof Document) ? this : document;
-              return origProtoWebkitFs?.get ? origProtoWebkitFs.get.call(receiver) : null;
-            } catch (e) {
-              return null;
-            }
-          },
-          configurable: true,
-          enumerable: true,
-        });
-      } catch (e) {}
-    };
-
-    patchDoc(document);
-    patchDoc(Document.prototype);
-
-    /* Move bottom-sheet-container inside the fullscreen player container so it renders on top of the video */
     const moveSheetToFullscreen = () => {
       const fsEl = getNativeFullscreenElement();
       if (!fsEl) return;
