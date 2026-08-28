@@ -11,6 +11,27 @@
     IO_ROOT_MARGIN_BOTTOM_PX: 5000,
     IO_ROOT_MARGIN_TOP_PX: 500,
     IO_ROOT_MARGIN_SIDE_PX: 500,
+
+    /* Top controls & settings bottom-sheet fullscreen interaction */
+    TOP_CONTROLS_INTERACTION_TIMEOUT_MS: 300,
+    TOP_CONTROLS_SELECTOR: [
+      "player-top-controls",
+      ".player-controls-top",
+      ".player-settings-icon",
+      "ytm-closed-captioning-button",
+      "player-autonav-toggle",
+      "bottom-sheet-container",
+      "bottom-sheet-layout",
+      "player-settings-menu",
+      "yt-list-item-view-model",
+      "ytm-menu-item",
+      "ytw-scrim",
+      "[aria-label*='Setting' i]",
+      "[aria-label*='Quality' i]",
+      "[aria-label*='Speed' i]",
+      "[aria-label*='Subtitle' i]",
+      "[aria-label*='Audio' i]",
+    ].join(", "),
   });
 
   /* ===========================================================================
@@ -128,24 +149,33 @@
   };
 
   const simulateActivity = () => {
-    const dispatchAltKey = (type) => {
-      try {
-        document.dispatchEvent(
-          new KeyboardEvent(type, { bubbles: true, cancelable: true, key: "Alt", code: "AltLeft" })
-        );
-      } catch (e) {}
-    };
-    const pressAltKey = () => {
-      dispatchAltKey("keydown");
-      dispatchAltKey("keyup");
-    };
+    if (activityInterval) return;
+
     const scheduleNext = () => {
-      const delay = CONFIG.ACTIVITY_MIN_DELAY_MS + Math.floor(Math.random() * (CONFIG.ACTIVITY_MAX_DELAY_MS - CONFIG.ACTIVITY_MIN_DELAY_MS));
+      const delay =
+        Math.random() * (CONFIG.ACTIVITY_MAX_DELAY_MS - CONFIG.ACTIVITY_MIN_DELAY_MS) +
+        CONFIG.ACTIVITY_MIN_DELAY_MS;
+
       activityInterval = setTimeout(() => {
-        if (activityInterval) {
-          pressAltKey();
-          scheduleNext();
-        }
+        const dummyKey = new KeyboardEvent("keydown", {
+          key: "Shift",
+          code: "ShiftLeft",
+          bubbles: true,
+          cancelable: true,
+        });
+        window.dispatchEvent(dummyKey);
+        document.dispatchEvent(dummyKey);
+
+        const dummyMouse = new MouseEvent("mousemove", {
+          bubbles: true,
+          cancelable: true,
+          clientX: Math.floor(Math.random() * 10) + 1,
+          clientY: Math.floor(Math.random() * 10) + 1,
+        });
+        window.dispatchEvent(dummyMouse);
+        document.dispatchEvent(dummyMouse);
+
+        scheduleNext();
       }, delay);
     };
     scheduleNext();
@@ -170,58 +200,89 @@
 
   /* ===========================================================================
    * Top controls fullscreen interaction & bottom-sheet relocator:
-   * YouTube Mobile marks inline top controls components as inactive/suspended
-   * (.Ua = true) when entering fullscreen, blocking clicks on .player-settings-icon.
-   * We hook default_c3_base.qq so components remain active, allowing the settings
-   * menu and submenus to open smoothly without touching document.fullscreenElement.
+   * YouTube Mobile drops clicks on inline top controls and submenu items when
+   * document.fullscreenElement is active. We intercept interactions and spoof
+   * fullscreenElement as null during the click window so the settings bottom sheet
+   * and all submenus (Quality, Speed, Subtitles) open smoothly.
    *
    * When opened in fullscreen, <bottom-sheet-container> is appended by YouTube to
    * ytm-app (behind the fullscreen player). The relocator moves it inside
    * #player-container-id so it renders on the browser's fullscreen Top Layer.
+   *
+   * When the bottom sheet closes, we reset isInteracting and dispatch hashchange
+   * to window, prompting YouTube Mobile's state listener to immediately sync
+   * isFullscreen: true and restore player-fullscreen-action-menu & exit-fullscreen button.
    * =========================================================================== */
   (() => {
-    /* 1. Protect components from being marked as disposed/suspended (Ua=true) */
-    const hookC3 = () => {
-      const c3 = window.default_c3_base;
-      if (!c3 || !c3.qq) return false;
+    let isInteracting = false;
+    let timer = null;
 
-      const origQq = c3.qq;
-      c3.qq = function (a) {
-        if (a) {
-          try {
-            Object.defineProperty(a, "Ua", {
-              get: () => false,
-              set: () => {},
-              configurable: true,
-            });
-          } catch (e) {
-            a.Ua = false;
-          }
-        }
-        return origQq.call(this, a);
-      };
-      return true;
-    };
-
-    if (!hookC3()) {
-      let attempts = 0;
-      const t = setInterval(() => {
-        attempts++;
-        if (hookC3() || attempts > 200) clearInterval(t);
-      }, 20);
-    }
-
-    /* 2. Move bottom-sheet-container inside the fullscreen player container */
-    const getNativeFullscreenElement = () => {
-      try {
-        const origFs = Object.getOwnPropertyDescriptor(Document.prototype, "fullscreenElement")?.get;
-        const origWebkit = Object.getOwnPropertyDescriptor(Document.prototype, "webkitFullscreenElement")?.get;
-        return (origFs ? origFs.call(document) : null) || (origWebkit ? origWebkit.call(document) : null);
-      } catch (e) {
-        return document.fullscreenElement || document.webkitFullscreenElement || null;
+    const markInteracting = (e) => {
+      if (e.target?.closest?.(CONFIG.TOP_CONTROLS_SELECTOR)) {
+        isInteracting = true;
+        if (timer) clearTimeout(timer);
+        timer = setTimeout(() => {
+          isInteracting = false;
+          timer = null;
+        }, CONFIG.TOP_CONTROLS_INTERACTION_TIMEOUT_MS);
       }
     };
 
+    ["pointerdown", "mousedown", "touchstart", "click"].forEach((evt) => {
+      window.addEventListener(evt, markInteracting, { capture: true, passive: true });
+      document.addEventListener(evt, markInteracting, { capture: true, passive: true });
+    });
+
+    const origProtoFs = Object.getOwnPropertyDescriptor(Document.prototype, "fullscreenElement");
+    const origProtoWebkitFs = Object.getOwnPropertyDescriptor(Document.prototype, "webkitFullscreenElement");
+
+    const getNativeFullscreenElement = () => {
+      try {
+        const origFs = origProtoFs?.get;
+        const origWebkit = origProtoWebkitFs?.get;
+        return (origFs ? origFs.call(document) : null) || (origWebkit ? origWebkit.call(document) : null);
+      } catch (e) {
+        return null;
+      }
+    };
+
+    const patchDoc = (target) => {
+      if (!target) return;
+      try {
+        Object.defineProperty(target, "fullscreenElement", {
+          get() {
+            if (isInteracting) return null;
+            try {
+              const receiver = (this instanceof Document) ? this : document;
+              return origProtoFs?.get ? origProtoFs.get.call(receiver) : null;
+            } catch (e) {
+              return null;
+            }
+          },
+          configurable: true,
+          enumerable: true,
+        });
+
+        Object.defineProperty(target, "webkitFullscreenElement", {
+          get() {
+            if (isInteracting) return null;
+            try {
+              const receiver = (this instanceof Document) ? this : document;
+              return origProtoWebkitFs?.get ? origProtoWebkitFs.get.call(receiver) : null;
+            } catch (e) {
+              return null;
+            }
+          },
+          configurable: true,
+          enumerable: true,
+        });
+      } catch (e) {}
+    };
+
+    patchDoc(document);
+    patchDoc(Document.prototype);
+
+    /* Move bottom-sheet-container inside the fullscreen player container */
     const moveSheetToFullscreen = () => {
       const fsEl = getNativeFullscreenElement();
       if (!fsEl) return;
@@ -251,6 +312,40 @@
       }
     };
     initSheetObserver();
+
+    /* When bottom sheet closes, re-sync player fullscreen state so action menu and controls remain active */
+    const resyncFullscreenUI = () => {
+      isInteracting = false;
+      if (timer) {
+        clearTimeout(timer);
+        timer = null;
+      }
+      const fsEl = getNativeFullscreenElement();
+      if (fsEl) {
+        window.dispatchEvent(new Event("hashchange"));
+      }
+    };
+
+    const bodyObserver = new MutationObserver((mutations) => {
+      for (let i = 0; i < mutations.length; i++) {
+        const m = mutations[i];
+        if (m.type === "attributes" && m.attributeName === "bottom-sheet-open") {
+          if (!document.body.hasAttribute("bottom-sheet-open")) {
+            setTimeout(resyncFullscreenUI, 20);
+            setTimeout(resyncFullscreenUI, 150);
+          }
+        }
+      }
+    });
+
+    const initBodyObserver = () => {
+      if (document.body) {
+        bodyObserver.observe(document.body, { attributes: true, attributeFilter: ["bottom-sheet-open"] });
+      } else {
+        setTimeout(initBodyObserver, 50);
+      }
+    };
+    initBodyObserver();
 
     const handleFullscreenChange = () => {
       const fsEl = getNativeFullscreenElement();
