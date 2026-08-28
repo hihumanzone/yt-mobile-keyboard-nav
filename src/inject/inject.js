@@ -224,25 +224,40 @@
     const origProtoFs = Object.getOwnPropertyDescriptor(Document.prototype, "fullscreenElement");
     const origProtoWebkitFs = Object.getOwnPropertyDescriptor(Document.prototype, "webkitFullscreenElement");
 
-    const getNativeFullscreenElement = () =>
-      (origProtoFs?.get ? origProtoFs.get.call(document) : null) ||
-      (origProtoWebkitFs?.get ? origProtoWebkitFs.get.call(document) : null);
-
-    const patchDoc = (doc) => {
+    const getNativeFullscreenElement = () => {
       try {
-        Object.defineProperty(doc, "fullscreenElement", {
+        if (origProtoFs?.get) return origProtoFs.get.call(document);
+        if (origProtoWebkitFs?.get) return origProtoWebkitFs.get.call(document);
+      } catch (e) {}
+      return null;
+    };
+
+    const patchDoc = (target) => {
+      if (!target) return;
+      try {
+        Object.defineProperty(target, "fullscreenElement", {
           get() {
             if (isInteracting) return null;
-            return origProtoFs?.get ? origProtoFs.get.call(doc) : null;
+            try {
+              const receiver = (this instanceof Document) ? this : document;
+              return origProtoFs?.get ? origProtoFs.get.call(receiver) : null;
+            } catch (e) {
+              return null;
+            }
           },
           configurable: true,
           enumerable: true,
         });
 
-        Object.defineProperty(doc, "webkitFullscreenElement", {
+        Object.defineProperty(target, "webkitFullscreenElement", {
           get() {
             if (isInteracting) return null;
-            return origProtoWebkitFs?.get ? origProtoWebkitFs.get.call(doc) : null;
+            try {
+              const receiver = (this instanceof Document) ? this : document;
+              return origProtoWebkitFs?.get ? origProtoWebkitFs.get.call(receiver) : null;
+            } catch (e) {
+              return null;
+            }
           },
           configurable: true,
           enumerable: true,
