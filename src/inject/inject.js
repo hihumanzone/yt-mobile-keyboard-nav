@@ -12,9 +12,26 @@
     IO_ROOT_MARGIN_TOP_PX: 500,
     IO_ROOT_MARGIN_SIDE_PX: 500,
 
-    /* Top controls fullscreen interaction */
-    TOP_CONTROLS_INTERACTION_TIMEOUT_MS: 400,
-    TOP_CONTROLS_SELECTOR: "player-top-controls, .player-controls-top, .player-settings-icon, ytm-closed-captioning-button, player-autonav-toggle, [aria-label*='Setting' i]",
+    /* Top controls and settings bottom-sheet fullscreen interaction */
+    TOP_CONTROLS_INTERACTION_TIMEOUT_MS: 500,
+    TOP_CONTROLS_SELECTOR: [
+      "player-top-controls",
+      ".player-controls-top",
+      ".player-settings-icon",
+      "ytm-closed-captioning-button",
+      "player-autonav-toggle",
+      "bottom-sheet-container",
+      "bottom-sheet-layout",
+      "player-settings-menu",
+      "yt-list-item-view-model",
+      "ytm-menu-item",
+      "ytw-scrim",
+      "[aria-label*='Setting' i]",
+      "[aria-label*='Quality' i]",
+      "[aria-label*='Speed' i]",
+      "[aria-label*='Subtitle' i]",
+      "[aria-label*='Audio' i]",
+    ].join(", "),
   });
 
   /* ===========================================================================
