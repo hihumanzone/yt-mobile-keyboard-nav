@@ -6,7 +6,7 @@ A flat-file Chrome extension (no build step, no bundler, no package.json). All J
 
 **Execution worlds:**
 - `src/content/content-*.js` + `src/content/content.js` — run in the **isolated world** (content scripts). They share `globalThis.YTME` and are loaded in manifest order: core config/state/utilities, player UI/keyboard/video lifecycle, mobile layout, feed/post enhancements, preview, then the `src/content/content.js` bootstrap/storage sync.
-- `src/inject/inject.js` — runs in the **MAIN world** (`"world": "MAIN"` in manifest). Only this script can modify page JS prototypes. It spoofs `document.hidden`/`visibilityState` for background playback, hooks SPA navigation via History API, simulates periodic keypresses to prevent inactivity pauses, **and patches `window.IntersectionObserver` to widen `rootMargin` so YouTube's lazy `ytm-rich-grid-renderer` materialises its first batch on small laptop viewports**.
+- `src/inject/inject.js` — runs in the **MAIN world** (`"world": "MAIN"` in manifest). Only this script can modify page JS prototypes. It spoofs `document.hidden`/`visibilityState` for background playback, hooks SPA navigation via History API, simulates periodic keypresses to prevent inactivity pauses, patches `window.IntersectionObserver` to widen `rootMargin` so YouTube's lazy `ytm-rich-grid-renderer` materialises its first batch on small laptop viewports, **and spoofs `document.fullscreenElement` during top controls interactions while relocating `<bottom-sheet-container>` inside the fullscreen player container so the settings menu opens properly in fullscreen**.
 - `src/background/background.js` — service worker. Toggles the `declarativeNetRequest` ruleset (which sets a mobile User-Agent and strips `app=` query param) and reloads YouTube tabs on state change.
 - `popup/popup.html`/`popup/popup.js` — extension popup UI with feature toggles.
 
@@ -59,3 +59,23 @@ A flat-file Chrome extension (no build step, no bundler, no package.json). All J
 There are no automated tests. Manual testing: load as unpacked extension in Chrome, open YouTube, verify mobile layout, keyboard shortcuts (Space, arrows, M, F, Shift+arrows), volume panel, background playback, and video preview on hover.
 
 Feed bootstrap: on a fresh load of `m.youtube.com` (no scroll), the first non-shorts shelf should contain ≥ 4 `ytm-rich-item-renderer` items above the first Shorts/post/poll shelf. Confirm `document.documentElement.dataset.ytExtIoPatched === "1"` in DevTools console. As you scroll, no empty shelf sections should appear, and items should not be inserted retrospectively after you scroll back up.
+
+## UI Modification & DOM Inspection Protocol (Diagnostic / Inspection Pattern)
+
+- **Zero Guessing**: Never guess DOM element selectors, container structures, or class names when implementing UI modifications or adding new elements/buttons.
+- **User-in-the-Loop Inspection Workflow**:
+  1. **Build a user-friendly diagnostic / data-gathering mechanism**:
+     - When uncertain about target elements, layout hooks, or event flows, provide a clear, easy-to-use tool to capture the exact DOM structure.
+     - **Form factor options**:
+       - *Built into extension*: Temporary inspector button, visual overlay, or click probe with a convenient "Copy to Clipboard" button for effortless sharing.
+       - *Console / DevTools snippet*: A ready-to-run DevTools command or recording script if DevTools inspection is better suited.
+       - *Event recording probe*: A listener that logs DOM interactions and bundles data for the user.
+  2. **Guide the User**:
+     - Clearly explain what was added or provided, what actions the user should perform (e.g., reload extension, click the probe button, interact with a target element), and ask them to copy and paste the output back into the chat.
+  3. **Analyze & Iteratively Refine**:
+     - Use the user's pasted output to learn the exact DOM hierarchy, class names, and attributes. If more context is needed, adjust the probe and ask for another quick sample.
+  4. **Implement Feature**:
+     - Implement the requested feature using verified, real-world selectors and structures.
+  5. **Clean Up**:
+     - **Always completely remove** any temporary diagnostic buttons, probes, console hooks, or inspector code before completing the task.
+

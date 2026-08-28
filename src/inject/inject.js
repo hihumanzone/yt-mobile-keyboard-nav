@@ -11,6 +11,10 @@
     IO_ROOT_MARGIN_BOTTOM_PX: 5000,
     IO_ROOT_MARGIN_TOP_PX: 500,
     IO_ROOT_MARGIN_SIDE_PX: 500,
+
+    /* Top controls fullscreen interaction */
+    TOP_CONTROLS_INTERACTION_TIMEOUT_MS: 400,
+    TOP_CONTROLS_SELECTOR: "player-top-controls, .player-controls-top, .player-settings-icon, ytm-closed-captioning-button, player-autonav-toggle, [aria-label*='Setting' i]",
   });
 
   /* ===========================================================================
@@ -167,6 +171,119 @@
       stopActivity();
     }
   });
+
+  /* ===========================================================================
+   * Top controls fullscreen interaction & bottom-sheet relocator:
+   * YouTube Mobile drops clicks on inline top controls (.player-settings-icon,
+   * captions, autoplay) when document.fullscreenElement is active.
+   * We intercept interactions on top controls and spoof fullscreenElement as null
+   * during the event window so YouTube's event dispatcher cleanly opens the
+   * settings menu bottom sheet and toggles captions/autoplay.
+   *
+   * When opened in fullscreen, <bottom-sheet-container> is appended by YouTube to
+   * ytm-app (behind the fullscreen player). The relocator moves it inside
+   * #player-container-id so it renders on the browser's fullscreen Top Layer.
+   * =========================================================================== */
+  (() => {
+    let isInteracting = false;
+    let timer = null;
+
+    const markInteracting = (e) => {
+      if (e.target?.closest?.(CONFIG.TOP_CONTROLS_SELECTOR)) {
+        isInteracting = true;
+        if (timer) clearTimeout(timer);
+        timer = setTimeout(() => {
+          isInteracting = false;
+          timer = null;
+        }, CONFIG.TOP_CONTROLS_INTERACTION_TIMEOUT_MS);
+      }
+    };
+
+    ["pointerdown", "mousedown", "touchstart", "click"].forEach((evt) => {
+      window.addEventListener(evt, markInteracting, { capture: true, passive: true });
+      document.addEventListener(evt, markInteracting, { capture: true, passive: true });
+    });
+
+    const origProtoFs = Object.getOwnPropertyDescriptor(Document.prototype, "fullscreenElement");
+    const origProtoWebkitFs = Object.getOwnPropertyDescriptor(Document.prototype, "webkitFullscreenElement");
+
+    const getNativeFullscreenElement = () =>
+      (origProtoFs?.get ? origProtoFs.get.call(document) : null) ||
+      (origProtoWebkitFs?.get ? origProtoWebkitFs.get.call(document) : null);
+
+    const patchDoc = (doc) => {
+      try {
+        Object.defineProperty(doc, "fullscreenElement", {
+          get() {
+            if (isInteracting) return null;
+            return origProtoFs?.get ? origProtoFs.get.call(doc) : null;
+          },
+          configurable: true,
+          enumerable: true,
+        });
+
+        Object.defineProperty(doc, "webkitFullscreenElement", {
+          get() {
+            if (isInteracting) return null;
+            return origProtoWebkitFs?.get ? origProtoWebkitFs.get.call(doc) : null;
+          },
+          configurable: true,
+          enumerable: true,
+        });
+      } catch (e) {}
+    };
+
+    patchDoc(document);
+    patchDoc(Document.prototype);
+
+    /* Move bottom-sheet-container inside the fullscreen player container so it renders on top of the video */
+    const moveSheetToFullscreen = () => {
+      const fsEl = getNativeFullscreenElement();
+      if (!fsEl) return;
+      const playerContainer = document.getElementById("player-container-id");
+      const targetContainer = (fsEl === playerContainer || fsEl.contains(playerContainer)) ? playerContainer : fsEl;
+      const sheet = document.querySelector("bottom-sheet-container");
+      if (sheet && targetContainer && sheet.parentElement !== targetContainer) {
+        targetContainer.appendChild(sheet);
+      }
+    };
+
+    const sheetObserver = new MutationObserver((mutations) => {
+      for (let i = 0; i < mutations.length; i++) {
+        if (mutations[i].addedNodes.length > 0) {
+          moveSheetToFullscreen();
+          break;
+        }
+      }
+    });
+
+    const initSheetObserver = () => {
+      const root = document.body || document.documentElement;
+      if (root) {
+        sheetObserver.observe(root, { childList: true, subtree: true });
+      } else {
+        setTimeout(initSheetObserver, 50);
+      }
+    };
+    initSheetObserver();
+
+    const handleFullscreenChange = () => {
+      const fsEl = getNativeFullscreenElement();
+      if (!fsEl) {
+        const sheet = document.querySelector("bottom-sheet-container");
+        const playerContainer = document.getElementById("player-container-id");
+        const app = document.querySelector("ytm-app, #app") || document.body;
+        if (sheet && playerContainer && sheet.parentElement === playerContainer && app) {
+          app.appendChild(sheet);
+        }
+      } else {
+        moveSheetToFullscreen();
+      }
+    };
+
+    document.addEventListener("fullscreenchange", handleFullscreenChange, true);
+    document.addEventListener("webkitfullscreenchange", handleFullscreenChange, true);
+  })();
 
   /* Cleanup on page unload */
   window.addEventListener("pagehide", stopActivity);

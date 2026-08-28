@@ -245,7 +245,7 @@
   }
 
   /* 2. Video Player Bounding Box (Direct Child of Body): stretch left, anchor under header, enforce real aspect ratio height */
-  html.yt-mobile-watch-mode div#player-container-id.player-container {
+  html.yt-mobile-watch-mode div#player-container-id.player-container:not(:fullscreen):not(:-webkit-full-screen) {
     position: absolute !important;
     top: 48px !important;
     left: 0 !important;
@@ -260,7 +260,7 @@
   }
 
   /* 3. Inner Video Player Aspect-Ratio Box: span full width and height of the parent container */
-  html.yt-mobile-watch-mode div#player-container-id.player-container #player.player-api.player-size {
+  html.yt-mobile-watch-mode div#player-container-id.player-container:not(:fullscreen):not(:-webkit-full-screen) #player.player-api.player-size {
     position: absolute !important;
     width: 100% !important;
     height: 100% !important;
@@ -278,6 +278,12 @@
   html.yt-mobile-watch-mode div#player-container-id.player-container .html5-video-container {
     width: 100% !important;
     height: 100% !important;
+  }
+
+  /* Ensure bottom sheet dialog stays elevated and interactive when mounted inside player container in fullscreen */
+  div#player-container-id:fullscreen bottom-sheet-container,
+  div#player-container-id:-webkit-full-screen bottom-sheet-container {
+    z-index: 2147483645 !important;
   }
 
   /* 4. Left metadata and comments under player: expand to fill 100% of left column */
@@ -413,7 +419,7 @@
       margin-right: 0 !important;
     }
 
-    html.yt-mobile-watch-mode div#player-container-id.player-container {
+    html.yt-mobile-watch-mode div#player-container-id.player-container:not(:fullscreen):not(:-webkit-full-screen) {
       position: relative !important; /* Restore normal block flow so metadata doesn't slip underneath! */
       top: 0 !important;
       margin-top: 48px !important; /* CRITICAL: Start exactly below the 48px fixed header bar so it does not slip underneath! */
