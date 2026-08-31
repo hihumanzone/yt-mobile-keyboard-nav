@@ -2,6 +2,17 @@
 
 A Manifest V3 Chrome extension that brings YouTube’s mobile experience to desktop, with desktop-friendly playback controls, background playback support, and feed/watch-page layout fixes.
 
+## Screenshots
+
+### Extension Popup & Shortcuts
+![Extension Popup](screenshots/popup-menu.png)
+
+### Mobile Home Feed & Hover Video Preview
+![Mobile Home Feed with Video Preview](screenshots/home-feed-preview.png)
+
+### Watch Page with Single Sidebar
+![Watch Page with Single Sidebar](screenshots/watch-page-layout.png)
+
 ## Features
 
 - **Mobile mode on desktop** using declarativeNetRequest UA override.
@@ -29,6 +40,10 @@ A Manifest V3 Chrome extension that brings YouTube’s mobile experience to desk
 ├── popup/
 │   ├── popup.html
 │   └── popup.js
+├── screenshots/
+│   ├── home-feed-preview.png
+│   ├── popup-menu.png
+│   └── watch-page-layout.png
 ├── src/
 │   ├── background/background.js
 │   ├── content/
